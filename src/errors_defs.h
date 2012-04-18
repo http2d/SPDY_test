@@ -1,0 +1,304 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
+
+/* All files in http2d are Copyright (C) 2012 Alvaro Lopez Ortega.
+ *
+ *   Authors:
+ *     * Alvaro Lopez Ortega <alvaro@alobbs.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above
+ *       copyright notice, this list of conditions and the following
+ *       disclaimer in the documentation and/or other materials provided
+ *       with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/* NOTE: File automatically generated (by error_list.py). */
+
+#define HTTP2D_ERROR_PROXY_HEADER_PARSE              0
+#define HTTP2D_ERROR_SOURCE_NONBLOCK                 1
+#define HTTP2D_ERROR_RRD_NO_BINARY                   2
+#define HTTP2D_ERROR_RRD_EXECV                       3
+#define HTTP2D_ERROR_RRD_FORK                        4
+#define HTTP2D_ERROR_RRD_WRITE                       5
+#define HTTP2D_ERROR_RRD_DIR_PERMS                   6
+#define HTTP2D_ERROR_RRD_MKDIR_WRITE                 7
+#define HTTP2D_ERROR_BALANCER_IP_REACTIVE            8
+#define HTTP2D_ERROR_BALANCER_IP_DISABLE             9
+#define HTTP2D_ERROR_BALANCER_IP_EXHAUSTED           10
+#define HTTP2D_ERROR_BALANCER_FAILOVER_REACTIVE      11
+#define HTTP2D_ERROR_BALANCER_FAILOVER_DISABLE       12
+#define HTTP2D_ERROR_BALANCER_FAILOVER_ENABLE_ALL    13
+#define HTTP2D_ERROR_RESOLVE_TIMEOUT                 14
+#define HTTP2D_ERROR_VALIDATOR_AUTHLIST_USER         15
+#define HTTP2D_ERROR_VALIDATOR_AUTHLIST_PASSWORD     16
+#define HTTP2D_ERROR_VALIDATOR_AUTHLIST_EMPTY        17
+#define HTTP2D_ERROR_VALIDATOR_PAM_DELAY             18
+#define HTTP2D_ERROR_VALIDATOR_PAM_AUTH              19
+#define HTTP2D_ERROR_VALIDATOR_PAM_ACCOUNT           20
+#define HTTP2D_ERROR_VALIDATOR_LDAP_KEY              21
+#define HTTP2D_ERROR_VALIDATOR_LDAP_PROPERTY         22
+#define HTTP2D_ERROR_VALIDATOR_LDAP_SECURITY         23
+#define HTTP2D_ERROR_VALIDATOR_LDAP_CONNECT          24
+#define HTTP2D_ERROR_VALIDATOR_LDAP_V3               25
+#define HTTP2D_ERROR_VALIDATOR_LDAP_CA               26
+#define HTTP2D_ERROR_VALIDATOR_LDAP_STARTTLS         27
+#define HTTP2D_ERROR_VALIDATOR_LDAP_BIND             28
+#define HTTP2D_ERROR_VALIDATOR_LDAP_SEARCH           29
+#define HTTP2D_ERROR_VALIDATOR_FILE                  30
+#define HTTP2D_ERROR_VALIDATOR_FILE_NO_FILE          31
+#define HTTP2D_ERROR_VALIDATOR_METHOD_UNKNOWN        32
+#define HTTP2D_ERROR_HANDLER_REGEX_GROUPS            33
+#define HTTP2D_ERROR_HANDLER_NO_BALANCER             34
+#define HTTP2D_ERROR_HANDLER_SECDOWN_SECRET          35
+#define HTTP2D_ERROR_HANDLER_SRV_INFO_MOD            36
+#define HTTP2D_ERROR_HANDLER_SRV_INFO_TYPE           37
+#define HTTP2D_ERROR_HANDLER_FILE_TIME_PARSE         38
+#define HTTP2D_ERROR_HANDLER_SSI_PROPERTY            39
+#define HTTP2D_ERROR_HANDLER_FCGI_VERSION            40
+#define HTTP2D_ERROR_HANDLER_FCGI_PARSING            41
+#define HTTP2D_ERROR_HANDLER_FCGI_STDERR             42
+#define HTTP2D_ERROR_HANDLER_FCGI_BALANCER           43
+#define HTTP2D_ERROR_HANDLER_ERROR_REDIR_CODE        44
+#define HTTP2D_ERROR_HANDLER_ERROR_REDIR_URL         45
+#define HTTP2D_ERROR_HANDLER_DIRLIST_THEME           46
+#define HTTP2D_ERROR_HANDLER_DIRLIST_BAD_THEME       47
+#define HTTP2D_ERROR_HANDLER_POST_REPORT_LANG        48
+#define HTTP2D_ERROR_HANDLER_DBSLAYER_LANG           49
+#define HTTP2D_ERROR_HANDLER_DBSLAYER_BALANCER       50
+#define HTTP2D_ERROR_HANDLER_CUSTOM_ERROR_HTTP       51
+#define HTTP2D_ERROR_HANDLER_CGI_SET_PROP            52
+#define HTTP2D_ERROR_HANDLER_CGI_SETID               53
+#define HTTP2D_ERROR_HANDLER_CGI_EXECUTE             54
+#define HTTP2D_ERROR_HANDLER_CGI_CREATEPROCESS       55
+#define HTTP2D_ERROR_HANDLER_CGI_GET_HOSTNAME        56
+#define HTTP2D_ERROR_CONFIG_ENTRY_BAD_TYPE           57
+#define HTTP2D_ERROR_BALANCER_EMPTY                  58
+#define HTTP2D_ERROR_BALANCER_UNDEFINED              59
+#define HTTP2D_ERROR_BALANCER_NO_KEY                 60
+#define HTTP2D_ERROR_BALANCER_BAD_SOURCE             61
+#define HTTP2D_ERROR_BALANCER_ONLINE_SOURCE          62
+#define HTTP2D_ERROR_BALANCER_OFFLINE_SOURCE         63
+#define HTTP2D_ERROR_BALANCER_EXHAUSTED              64
+#define HTTP2D_ERROR_ENCODER_NOT_SET_VALUE           65
+#define HTTP2D_ERROR_ENCODER_DEFLATEINIT2            66
+#define HTTP2D_ERROR_ENCODER_DEFLATEEND              67
+#define HTTP2D_ERROR_ENCODER_DEFLATE                 68
+#define HTTP2D_ERROR_LOGGER_NO_KEY                   69
+#define HTTP2D_ERROR_LOGGER_NO_WRITER                70
+#define HTTP2D_ERROR_LOGGER_WRITER_UNKNOWN           71
+#define HTTP2D_ERROR_LOGGER_WRITER_READ              72
+#define HTTP2D_ERROR_LOGGER_WRITER_APPEND            73
+#define HTTP2D_ERROR_LOGGER_WRITER_ALLOC             74
+#define HTTP2D_ERROR_LOGGER_WRITER_PIPE              75
+#define HTTP2D_ERROR_LOGGER_WRITER_FORK              76
+#define HTTP2D_ERROR_LOGGER_X_REAL_IP_PARSE          77
+#define HTTP2D_ERROR_LOGGER_CUSTOM_NO_TEMPLATE       78
+#define HTTP2D_ERROR_LOGGER_CUSTOM_TEMPLATE          79
+#define HTTP2D_ERROR_FDPOLL_EPOLL_CTL_ADD            80
+#define HTTP2D_ERROR_FDPOLL_EPOLL_CTL_DEL            81
+#define HTTP2D_ERROR_FDPOLL_EPOLL_CTL_MOD            82
+#define HTTP2D_ERROR_FDPOLL_EPOLL_CREATE             83
+#define HTTP2D_ERROR_FDPOLL_EPOLL_CLOEXEC            84
+#define HTTP2D_ERROR_FDPOLL_PORTS_FD_ASSOCIATE       85
+#define HTTP2D_ERROR_FDPOLL_PORTS_ASSOCIATE          86
+#define HTTP2D_ERROR_FDPOLL_PORTS_GETN               87
+#define HTTP2D_ERROR_FDPOLL_POLL_FULL                88
+#define HTTP2D_ERROR_FDPOLL_POLL_DEL                 89
+#define HTTP2D_ERROR_FDPOLL_KQUEUE                   90
+#define HTTP2D_ERROR_GEN_EVHOST_TPL_DROOT            91
+#define HTTP2D_ERROR_GEN_EVHOST_PARSE                92
+#define HTTP2D_ERROR_VRULE_NO_PROPERTY               93
+#define HTTP2D_ERROR_VRULE_TARGET_IP_PARSE           94
+#define HTTP2D_ERROR_VRULE_REHOST_NO_DOMAIN          95
+#define HTTP2D_ERROR_RULE_NO_PROPERTY                96
+#define HTTP2D_ERROR_RULE_REQUEST_NO_TABLE           97
+#define HTTP2D_ERROR_RULE_REQUEST_NO_PCRE_PTR        98
+#define HTTP2D_ERROR_RULE_METHOD_UNKNOWN             99
+#define HTTP2D_ERROR_RULE_HEADER_UNKNOWN_HEADER      100
+#define HTTP2D_ERROR_RULE_HEADER_UNKNOWN_TYPE        101
+#define HTTP2D_ERROR_RULE_FROM_ENTRY                 102
+#define HTTP2D_ERROR_RULE_BIND_PORT                  103
+#define HTTP2D_ERROR_SERVER_GROUP_NOT_FOUND          104
+#define HTTP2D_ERROR_SERVER_USER_NOT_FOUND           105
+#define HTTP2D_ERROR_SERVER_THREAD_IGNORE            106
+#define HTTP2D_ERROR_SERVER_THREAD_POLICY            107
+#define HTTP2D_ERROR_SERVER_TOKEN                    108
+#define HTTP2D_ERROR_SERVER_POLLING_UNRECOGNIZED     109
+#define HTTP2D_ERROR_SERVER_POLLING_UNSUPPORTED      110
+#define HTTP2D_ERROR_SERVER_POLLING_UNKNOWN          111
+#define HTTP2D_ERROR_SERVER_NO_BIND                  112
+#define HTTP2D_ERROR_SERVER_IGNORE_TLS               113
+#define HTTP2D_ERROR_SERVER_TLS_DEFAULT              114
+#define HTTP2D_ERROR_SERVER_NO_CRYPTOR               115
+#define HTTP2D_ERROR_SERVER_PARSE                    116
+#define HTTP2D_ERROR_SERVER_INITGROUPS               117
+#define HTTP2D_ERROR_SERVER_SETGID                   118
+#define HTTP2D_ERROR_SERVER_SETUID                   119
+#define HTTP2D_ERROR_SERVER_GET_FDLIMIT              120
+#define HTTP2D_ERROR_SERVER_FDS_SYS_LIMIT            121
+#define HTTP2D_ERROR_SERVER_THREAD_POLL              122
+#define HTTP2D_ERROR_SERVER_NEW_THREAD               123
+#define HTTP2D_ERROR_SERVER_TLS_INIT                 124
+#define HTTP2D_ERROR_SERVER_FD_SET                   125
+#define HTTP2D_ERROR_SERVER_FD_GET                   126
+#define HTTP2D_ERROR_SERVER_LOW_FD_LIMIT             127
+#define HTTP2D_ERROR_SERVER_UID_GET                  128
+#define HTTP2D_ERROR_SERVER_CHROOT                   129
+#define HTTP2D_ERROR_SERVER_CHDIR                    130
+#define HTTP2D_ERROR_SERVER_SOURCE                   131
+#define HTTP2D_ERROR_SERVER_SOURCE_TYPE              132
+#define HTTP2D_ERROR_SERVER_SOURCE_TYPE_UNKNOWN      133
+#define HTTP2D_ERROR_SERVER_VSERVER_PRIO             134
+#define HTTP2D_ERROR_SERVER_NO_VSERVERS              135
+#define HTTP2D_ERROR_SERVER_NO_DEFAULT_VSERVER       136
+#define HTTP2D_ERROR_SERVER_FORK                     137
+#define HTTP2D_ERROR_SERVER_PANIC                    138
+#define HTTP2D_ERROR_SRC_INTER_NO_USER               139
+#define HTTP2D_ERROR_SRC_INTER_NO_GROUP              140
+#define HTTP2D_ERROR_SRC_INTER_EMPTY_INTERPRETER     141
+#define HTTP2D_ERROR_SRC_INTER_NO_INTERPRETER        142
+#define HTTP2D_ERROR_SRC_INTER_ENV_IN_COMMAND        143
+#define HTTP2D_ERROR_SRC_INTER_SPAWN                 144
+#define HTTP2D_ERROR_CONF_READ_ACCESS_FILE           145
+#define HTTP2D_ERROR_CONF_READ_CHILDREN_SAME_NODE    146
+#define HTTP2D_ERROR_CONF_READ_PARSE                 147
+#define HTTP2D_ERROR_TEMPLATE_NO_TOKEN               148
+#define HTTP2D_ERROR_SPAWNER_TMP_INIT                149
+#define HTTP2D_ERROR_SPAWNER_UNLOCK_SEMAPHORE        150
+#define HTTP2D_ERROR_HTTP_UNKNOWN_CODE               151
+#define HTTP2D_ERROR_ICONS_NO_DEFAULT                152
+#define HTTP2D_ERROR_ICONS_ASSIGN_SUFFIX             153
+#define HTTP2D_ERROR_ICONS_DUP_SUFFIX                154
+#define HTTP2D_ERROR_HEADER_EMPTY                    155
+#define HTTP2D_ERROR_HEADER_NO_EOH                   156
+#define HTTP2D_ERROR_HEADER_TOO_MANY_CRLF            157
+#define HTTP2D_ERROR_HEADER_ADD_HEADER               158
+#define HTTP2D_ERROR_SOCKET_NO_IPV6                  159
+#define HTTP2D_ERROR_SOCKET_NEW_SOCKET               160
+#define HTTP2D_ERROR_SOCKET_SET_LINGER               161
+#define HTTP2D_ERROR_SOCKET_RM_NAGLES                162
+#define HTTP2D_ERROR_SOCKET_NON_BLOCKING             163
+#define HTTP2D_ERROR_SOCKET_NO_SOCKET                164
+#define HTTP2D_ERROR_SOCKET_REMOVE                   165
+#define HTTP2D_ERROR_SOCKET_WRITE                    166
+#define HTTP2D_ERROR_SOCKET_READ                     167
+#define HTTP2D_ERROR_SOCKET_WRITEV                   168
+#define HTTP2D_ERROR_SOCKET_CONNECT                  169
+#define HTTP2D_ERROR_SOCKET_BAD_FAMILY               170
+#define HTTP2D_ERROR_SOCKET_SET_NODELAY              171
+#define HTTP2D_ERROR_SOCKET_RM_NODELAY               172
+#define HTTP2D_ERROR_SOCKET_SET_CORK                 173
+#define HTTP2D_ERROR_SOCKET_RM_CORK                  174
+#define HTTP2D_ERROR_THREAD_HANDLER_RET              175
+#define HTTP2D_ERROR_THREAD_OUT_OF_FDS               176
+#define HTTP2D_ERROR_THREAD_GET_CONN_OBJ             177
+#define HTTP2D_ERROR_THREAD_SET_SOCKADDR             178
+#define HTTP2D_ERROR_THREAD_CREATE                   179
+#define HTTP2D_ERROR_CONNECTION_AUTH                 180
+#define HTTP2D_ERROR_CONNECTION_LOCAL_DIR            181
+#define HTTP2D_ERROR_CONNECTION_GET_VSERVER          182
+#define HTTP2D_ERROR_NCPUS_PSTAT                     183
+#define HTTP2D_ERROR_NCPUS_HW_NCPU                   184
+#define HTTP2D_ERROR_NCPUS_SYSCONF                   185
+#define HTTP2D_ERROR_INIT_CPU_NUMBER                 186
+#define HTTP2D_ERROR_INIT_GET_FD_LIMIT               187
+#define HTTP2D_ERROR_UTIL_F_GETFL                    188
+#define HTTP2D_ERROR_UTIL_F_SETFL                    189
+#define HTTP2D_ERROR_UTIL_F_GETFD                    190
+#define HTTP2D_ERROR_UTIL_F_SETFD                    191
+#define HTTP2D_ERROR_UTIL_MKDIR                      192
+#define HTTP2D_ERROR_AVL_PREVIOUS                    193
+#define HTTP2D_ERROR_AVL_NEXT                        194
+#define HTTP2D_ERROR_AVL_BALANCE                     195
+#define HTTP2D_ERROR_BUFFER_NEG_ESTIMATION           196
+#define HTTP2D_ERROR_BUFFER_NO_SPACE                 197
+#define HTTP2D_ERROR_BUFFER_BAD_ESTIMATION           198
+#define HTTP2D_ERROR_BUFFER_AVAIL_SIZE               199
+#define HTTP2D_ERROR_BUFFER_OPEN_FILE                200
+#define HTTP2D_ERROR_BUFFER_READ_FILE                201
+#define HTTP2D_ERROR_PLUGIN_LOAD_NO_SYM              202
+#define HTTP2D_ERROR_PLUGIN_DLOPEN                   203
+#define HTTP2D_ERROR_PLUGIN_NO_INIT                  204
+#define HTTP2D_ERROR_PLUGIN_NO_OPEN                  205
+#define HTTP2D_ERROR_PLUGIN_NO_INFO                  206
+#define HTTP2D_ERROR_VSERVER_BAD_METHOD              207
+#define HTTP2D_ERROR_VSERVER_TIME_MISSING            208
+#define HTTP2D_ERROR_VSERVER_RULE_UNKNOWN_KEY        209
+#define HTTP2D_ERROR_VSERVER_TYPE_MISSING            210
+#define HTTP2D_ERROR_VSERVER_LOAD_MODULE             211
+#define HTTP2D_ERROR_VSERVER_BAD_PRIORITY            212
+#define HTTP2D_ERROR_VSERVER_RULE_MATCH_MISSING      213
+#define HTTP2D_ERROR_VSERVER_MATCH_MISSING           214
+#define HTTP2D_ERROR_VSERVER_UNKNOWN_KEY             215
+#define HTTP2D_ERROR_VSERVER_NICK_MISSING            216
+#define HTTP2D_ERROR_VSERVER_DROOT_MISSING           217
+#define HTTP2D_ERROR_VSERVER_FLCACHE_UNKNOWN_POLICY  218
+#define HTTP2D_ERROR_REGEX_COMPILATION               219
+#define HTTP2D_ERROR_ACCESS_IPV4_MAPPED              220
+#define HTTP2D_ERROR_ACCESS_INVALID_IP               221
+#define HTTP2D_ERROR_ACCESS_INVALID_MASK             222
+#define HTTP2D_ERROR_BIND_PORT_NEEDED                223
+#define HTTP2D_ERROR_BIND_COULDNT_BIND_PORT          224
+#define HTTP2D_ERROR_HANDLER_RENDER_RRD_EXEC         225
+#define HTTP2D_ERROR_HANDLER_RENDER_RRD_EMPTY_REPLY  226
+#define HTTP2D_ERROR_HANDLER_RENDER_RRD_MSG          227
+#define HTTP2D_ERROR_HANDLER_RENDER_RRD_INVALID_REQ  228
+#define HTTP2D_ERROR_COLLECTOR_COMMAND_EXEC          229
+#define HTTP2D_ERROR_COLLECTOR_NEW_THREAD            230
+#define HTTP2D_ERROR_COLLECTOR_NEW_MUTEX             231
+#define HTTP2D_ERROR_VALIDATOR_MYSQL_HASH            232
+#define HTTP2D_ERROR_VALIDATOR_MYSQL_KEY             233
+#define HTTP2D_ERROR_VALIDATOR_MYSQL_USER            234
+#define HTTP2D_ERROR_VALIDATOR_MYSQL_DATABASE        235
+#define HTTP2D_ERROR_VALIDATOR_MYSQL_QUERY           236
+#define HTTP2D_ERROR_VALIDATOR_MYSQL_SOURCE          237
+#define HTTP2D_ERROR_VALIDATOR_MYSQL_NOCONN          238
+#define HTTP2D_ERROR_ERRORLOG_PARAM                  239
+#define HTTP2D_ERROR_SSL_NO_ENTROPY                  240
+#define HTTP2D_ERROR_SSL_SOCKET                      241
+#define HTTP2D_ERROR_SSL_SRV_MATCH                   242
+#define HTTP2D_ERROR_SSL_CHANGE_CTX                  243
+#define HTTP2D_ERROR_SSL_ALLOCATE_CTX                244
+#define HTTP2D_ERROR_SSL_CIPHER                      245
+#define HTTP2D_ERROR_SSL_CERTIFICATE                 246
+#define HTTP2D_ERROR_SSL_KEY                         247
+#define HTTP2D_ERROR_SSL_KEY_MATCH                   248
+#define HTTP2D_ERROR_SSL_CA_READ                     249
+#define HTTP2D_ERROR_SSL_CA_LOAD                     250
+#define HTTP2D_ERROR_SSL_SESSION_ID                  251
+#define HTTP2D_ERROR_SSL_SNI                         252
+#define HTTP2D_ERROR_SSL_CONNECTION                  253
+#define HTTP2D_ERROR_SSL_FD                          254
+#define HTTP2D_ERROR_SSL_INIT                        255
+#define HTTP2D_ERROR_SSL_SW_DEFAULT                  256
+#define HTTP2D_ERROR_SSL_SW_ERROR                    257
+#define HTTP2D_ERROR_SSL_SR_DEFAULT                  258
+#define HTTP2D_ERROR_SSL_SR_ERROR                    259
+#define HTTP2D_ERROR_SSL_CREATE_CTX                  260
+#define HTTP2D_ERROR_SSL_CTX_LOAD                    261
+#define HTTP2D_ERROR_SSL_CTX_SET                     262
+#define HTTP2D_ERROR_SSL_SNI_SRV                     263
+#define HTTP2D_ERROR_SSL_CONNECT                     264
+#define HTTP2D_ERROR_SSL_PKCS11                      265
+#define HTTP2D_ERROR_SSL_DEFAULTS                    266
+#define HTTP2D_ERROR_FLCACHE_MKDIR                   267
+#define HTTP2D_ERROR_FLCACHE_MKDIRS                  268
+#define HTTP2D_ERROR_FLCACHE_CREATE_FILE             269

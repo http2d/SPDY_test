@@ -1,0 +1,20 @@
+#ifndef HTTP2D_COMPILATION_CONSTANTS_H
+#define HTTP2D_COMPILATION_CONSTANTS_H
+
+# define HTTP2D_PLUGINDIR   "%libdir%/http2d"
+# define HTTP2D_DEPSDIR     "%datadir%/http2d/deps"
+# define HTTP2D_DATADIR     "%datadir%/http2d"
+# define HTTP2D_DOCDIR      "%docdir%"
+
+# define HTTP2D_VAR_RUN     "%localstatedir%/run"
+# define HTTP2D_FLCACHE     "%localstatedir%/lib/http2d/flcache"
+# define HTTP2D_RRD_DIR     "%localstatedir%/lib/http2d/graphs"
+
+# define HTTP2D_CONFDIR     "%sysconfdir%/http2d"
+# define HTTP2D_SERVER      "%prefix%/sbin/http2d"
+# define HTTP2D_WORKER      "%prefix%/sbin/http2d-worker"
+# define HTTP2D_ICONSDIR    "%prefix%/share/http2d/icons"
+# define HTTP2D_THEMEDIR    "%prefix%/share/http2d/themes"
+# define HTTP2D_PANIC_PATH  "%prefix%/bin/http2d-panic"
+
+#endif /* HTTP2D_COMPILATION_CONSTANTS_H */

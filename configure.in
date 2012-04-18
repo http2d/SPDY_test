@@ -1,0 +1,630 @@
+dnl -*- mode: m4-mode -*-
+dnl Process this file with autoconf to produce a configure script.
+
+AC_COPYRIGHT([
+All files in HTTP2d are Copyright (C)2012 Alvaro Lopez Ortega.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+])
+
+dnl
+dnl require autoconf 2.60
+dnl
+AC_PREREQ([2.60])
+
+dnl
+dnl Version
+dnl
+m4_define([http2d_major_version], [0])
+m4_define([http2d_minor_version], [0])
+m4_define([http2d_micro_version], [1])
+m4_define([http2d_version], m4_format('%s.%s.%s', http2d_major_version, http2d_minor_version, http2d_micro_version))
+
+dnl
+dnl Init autoconf and automake
+dnl
+AC_INIT([HTTP2d], [http2d_version], [http://bugs.cherokee-project.com/], [http2d])
+AC_CONFIG_SRCDIR([src/main.c])
+AC_CONFIG_MACRO_DIR([m4])
+AM_INIT_AUTOMAKE([no-define tar-ustar -Wno-portability])
+AM_MAINTAINER_MODE
+
+AC_DEFINE(PACKAGE_MAJOR_VERSION, "cherokee_major_version", [Version string])
+AC_DEFINE(PACKAGE_MINOR_VERSION, "cherokee_minor_version", [Version string])
+AC_DEFINE(PACKAGE_MICRO_VERSION, "cherokee_micro_version", [Version string])
+
+PACKAGE_MAJOR_VERSION="http2d_major_version"
+PACKAGE_MINOR_VERSION="http2d_minor_version"
+PACKAGE_MICRO_VERSION="http2d_micro_version"
+AC_SUBST(PACKAGE_MAJOR_VERSION)
+AC_SUBST(PACKAGE_MINOR_VERSION)
+AC_SUBST(PACKAGE_MICRO_VERSION)
+
+dnl
+dnl Define library soname
+dnl
+HTTP2D_AGE=0
+HTTP2D_CURRENT=0
+HTTP2D_REVISION=1
+AC_SUBST(HTTP2D_AGE)
+AC_SUBST(HTTP2D_CURRENT)
+AC_SUBST(HTTP2D_REVISION)
+
+AC_DEFINE_UNQUOTED(HTTP2D_CONFIG_ARGS, "$ac_configure_args", [configure arguments])
+
+dnl
+dnl Check the Git revision
+dnl
+AC_ARG_ENABLE(beta, AC_HELP_STRING([--enable-beta], [Enable beta development]),
+		    is_beta="$enableval", is_beta="no")
+
+if test x"$is_beta" = "xyes"; then
+  dnl Figure revision
+  today=`date +'%y%m%d'`
+  git_hash=`git log -1 --pretty=tformat:%h`
+
+  PACKAGE_PATCH_VERSION="b${today}_${git_hash}"
+
+  dnl Redefine versions
+  PACKAGE_VERSION="$PACKAGE_MAJOR_VERSION.$PACKAGE_MINOR_VERSION.$PACKAGE_MICRO_VERSION$PACKAGE_PATCH_VERSION"
+  AC_DEFINE_UNQUOTED(PACKAGE_VERSION, "${PACKAGE_VERSION}", [Package version])
+
+  VERSION="$PACKAGE_MAJOR_VERSION.$PACKAGE_MINOR_VERSION.$PACKAGE_MICRO_VERSION$PACKAGE_PATCH_VERSION"
+  AC_DEFINE(VERSION, $VERSION, [Software version])
+else
+
+  PACKAGE_PATCH_VERSION=""
+fi
+
+dnl
+dnl Path version
+dnl
+AC_SUBST(PACKAGE_PATCH_VERSION)
+AC_DEFINE_UNQUOTED(PACKAGE_PATCH_VERSION, "${PACKAGE_PATCH_VERSION}", [Version string])
+
+dnl
+dnl Initial CFLAGS
+dnl
+AC_MSG_CHECKING(initial CFLAGS)
+AC_MSG_RESULT($CFLAGS)
+
+m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
+
+dnl
+dnl Check for CPU / vendor / OS
+dnl
+AC_CANONICAL_HOST
+
+os_string="UNIX"
+so_suffix=so
+mod_suffix=$so_suffix
+
+AC_MSG_CHECKING([host platform characteristics])
+	case "$host" in
+	*-*-mingw*|*-*-cygwin*)
+		so_suffix=DLL
+		mod_suffix=$so_suffix
+	     os_string="Win32"
+          libdl=
+          ;;
+	*-*-linux*)
+          libdl="-ldl"
+          ;;
+	*-*-solaris*)
+	     AC_DEFINE(SOLARIS, 1, [It is Solaris])
+		setenv_is_threadsafe="yes"
+          libdl="-ldl"
+          ;;
+	*-*-hpux*)
+          libdl="-ldl"
+          ;;
+	*-*-aix*)
+          libdl="-ldl"
+	     ;;
+     *-*-irix6*)
+          AC_DEFINE(IRIX, 1, [It is SGI Irix])
+          setenv_is_threadsafe="yes"
+          libdl="-ldl"
+          ;;
+	*-*-*freebsd*|*-*-*openbsd*|*-*-*netbsd*|*-*-*dragonfly*)
+          libdl=
+          ;;
+	*-*-darwin*)
+		so_suffix=dylib
+		mod_suffix=so
+          libdl="-ldl"
+          ;;
+	*)
+		AC_MSG_WARN([*** Please add $host to configure.in checks!])
+          libdl="-ldl"
+          ;;
+esac
+AC_MSG_RESULT(ok)
+
+dnl
+dnl OS string
+dnl
+AC_ARG_ENABLE(os_string, AC_HELP_STRING([--enable-os-string=STR], [Set a customized OS type string]), [os_string="$enableval"])
+AC_DEFINE_UNQUOTED(OS_TYPE, "${os_string}", [OS type])
+
+AM_CONDITIONAL(PLATFORM_WIN32, test x"$os_string" = "xWin32")
+
+dnl
+dnl Tracing
+dnl
+AC_ARG_ENABLE(trace, AC_HELP_STRING([--enable-trace], [Enable trace facility]),
+   [enable_trace="$enableval"
+    AC_DEFINE(TRACE_ENABLED, 1, [Trace facility])
+   ], [enable_trace="no"])
+
+dnl
+dnl Backtraces
+dnl
+AC_ARG_ENABLE(backtraces, AC_HELP_STRING([--enable-backtraces], [Enable backtraces on error]),
+   [enable_backtraces="$enableval"
+    AC_DEFINE(BACKTRACES_ENABLED, 1, [Backtracing facility])
+   ], [enable_backtraces="no"])
+
+dnl
+dnl Dynamic library loading library
+dnl
+LIBS="$LIBS $libdl"
+AC_DEFINE_UNQUOTED(SO_SUFFIX, "${so_suffix}", [Dynamic loading libraries extension])
+AC_DEFINE_UNQUOTED(MOD_SUFFIX, "${mod_suffix}", [Dynamic modules extension])
+
+dnl
+dnl Libtool options
+dnl
+if test "$os_string" != "Win32"; then
+    # libtool option to control which symbols are exported
+    # right now, symbols starting with _ are not exported
+    LIBTOOL_EXPORT_OPTIONS='-export-symbols-regex "^[[^_]].*"'
+else
+    LIBTOOL_EXPORT_OPTIONS=
+fi
+AC_SUBST(LIBTOOL_EXPORT_OPTIONS)
+
+dnl
+dnl Set the Version
+dnl
+AM_INIT_AUTOMAKE(HTTP2d, $VERSION)
+AM_MAINTAINER_MODE
+
+AM_CONFIG_HEADER(config.h)
+AC_SUBST(VERSION)
+
+dnl
+dnl Initialize Libtool
+dnl
+m4_ifdef([LT_INIT],
+  [LT_INIT([dlopen shared static win32-dll])],
+  [AC_LIBTOOL_DLOPEN
+   AC_LIBTOOL_WIN32_DLL
+   ])
+
+dnl
+dnl Paths to common tools
+dnl
+AC_PROG_CC
+AC_PROG_CC_C99
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
+AM_PROG_LIBTOOL
+
+AC_PATH_PROG(http2dpath, http2d)
+
+AC_FUNC_CLOSEDIR_VOID
+AC_FUNC_MALLOC
+AC_FUNC_REALLOC
+AC_FUNC_VPRINTF
+
+AC_C_CONST
+AC_C_BIGENDIAN
+AC_C_INLINE
+if test "$ac_cv_c_inline" != no; then
+  AC_DEFINE(HAVE_INLINE, 1, [Compile supports inline])
+fi
+
+dnl
+dnl Check for headers
+dnl
+AC_HEADER_STDC
+AC_HEADER_DIRENT
+AC_HEADER_TIME
+AC_HEADER_SYS_WAIT
+
+AC_CHECK_HEADERS(endian.h machine/endian.h sys/machine.h sys/endian.h sys/isa_defs.h sys/utsname.h sys/poll.h poll.h )
+AC_CHECK_HEADERS(sys/socket.h sys/un.h netinet/in.h arpa/inet.h netinet/tcp.h sys/ioctl.h fcntl.h sys/ofcntl.h sys/time.h)
+AC_CHECK_HEADERS(sys/resource.h resource.h unistd.h syslog.h stdint.h inttypes.h error.h pwd.h sys/uio.h)
+AC_CHECK_HEADERS(pthread.h netdb.h stdarg.h sys/filio.h sys/varargs.h sys/select.h sys/mman.h sys/uio.h grp.h winsock.h)
+AC_CHECK_HEADERS(winsock.h winsock2.h sched.h execinfo.h)
+
+AC_SYS_LARGEFILE
+
+AC_SIZE_T
+AC_TYPE_UID_T
+AC_TYPE_MODE_T
+AC_TYPE_OFF_T
+AC_TYPE_SIZE_T
+AC_TYPE_PID_T
+AC_STRUCT_ST_RDEV
+AC_CHECK_TYPE(ino_t, unsigned)
+AC_CHECK_TYPE(loff_t, off_t)
+AC_CHECK_TYPE(offset_t, loff_t)
+AC_CHECK_TYPE(ssize_t, int)
+AC_CHECK_TYPE(wchar_t, unsigned short)
+
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(unsigned int)
+AC_CHECK_SIZEOF(unsigned long)
+AC_CHECK_SIZEOF(unsigned long long)
+AC_CHECK_SIZEOF(unsigned int)
+AC_CHECK_SIZEOF(off_t)
+AC_CHECK_SIZEOF(size_t)
+AC_CHECK_SIZEOF(sig_atomic_t)
+AC_CHECK_SIZEOF(time_t)
+
+AC_CACHE_CHECK([for long long],samba_cv_have_longlong,[
+AC_TRY_RUN([
+  #include <stdio.h>
+  main() { long long x = 1000000; x *= x; exit(((x/1000000) == 1000000)? 0: 1); }],
+  have_longlong=yes,
+  have_longlong=no,
+  have_longlong=cross)
+])
+if test x"$have_longlong" = x"yes"; then
+    AC_DEFINE(HAVE_LONGLONG,1,[Whether the host supports long long'])
+fi
+
+dnl
+dnl Functions
+dnl
+AC_FUNC_MMAP
+AC_FUNC_FORK
+AC_FUNC_MEMCMP
+
+AC_CHECK_FUNCS(syslog vsyslog strsep strcasestr memmove strerror bcopy strlcat)
+AC_CHECK_FUNCS(gmtime gmtime_r localtime localtime_r getrlimit getdtablesize)
+AC_CHECK_FUNCS(readdir readdir_r flockfile funlockfile strnstr backtrace)
+AC_CHECK_FUNCS(random srandom srandomdev)
+
+dnl readdir_r()
+LIBWWW_READDIR_R_TYPE
+
+dnl getpw*()
+FW_CHECK_PWD
+FW_CHECK_GRP
+
+AC_CHECK_MEMBER(struct tm.tm_gmtoff,
+                AC_DEFINE([HAVE_STRUCT_TM_GMTOFF],[1],[gmtoff in struct tm]),,[#include <time.h>])
+
+dnl
+dnl Sockets
+dnl
+SENDFILE_CHECK
+ETR_SOCKET_NSL
+
+AC_ARG_ENABLE(ipv6,
+  AC_HELP_STRING([--disable-ipv6], [Disable IPv6 support]),
+  [ if test "$enableval" = "no"; then
+       disabled_ipv6=1
+    fi ],
+  [ disabled_ipv6=0 ] )
+
+AC_SEARCH_LIBS(getaddrinfo, socket inet6)
+AC_SEARCH_LIBS(getnameinfo, socket inet6)
+AC_SEARCH_LIBS(gai_strerror, socket inet6)
+AC_CHECK_FUNC(gai_strerror)
+
+APR_CHECK_WORKING_GETADDRINFO
+APR_CHECK_WORKING_GETNAMEINFO
+
+AC_ACME_SOCKADDR_UN
+AC_ACME_SOCKADDR_IN6
+AC_ACME_SOCKADDR_STORAGE
+
+AC_MSG_CHECKING(if the system supports IPv6)
+have_ipv6="no"
+
+if test "$disabled_ipv6" = 1; then
+    AC_MSG_RESULT([no -- disabled by user])
+else
+    if test "x$ac_cv_acme_sockaddr_in6" = "xyes"; then
+        if test "x$ac_cv_working_getaddrinfo" = "xyes"; then
+            if test "x$ac_cv_working_getnameinfo" = "xyes"; then
+                have_ipv6="yes"
+                AC_MSG_RESULT([yes])
+ 		      AC_DEFINE(HAVE_IPV6, 1, [Define if you have IPv6 support.])
+            else
+                AC_MSG_RESULT([no -- no getnameinfo])
+            fi
+        else
+            AC_MSG_RESULT([no -- no working getaddrinfo])
+        fi
+    else
+        AC_MSG_RESULT([no -- no sockaddr_in6])
+    fi
+fi
+
+
+dnl
+dnl Pthread
+dnl
+have_pthread="no"
+AC_MSG_CHECKING([for special a pthread case])
+
+oldcflags="$CFLAGS"
+CFLAGS="$CFLAGS -D_REENTRANT"
+PTHREAD_CFLAGS="-D_REENTRANT"
+
+case "$host" in
+	i386-unknown-freebsd*)
+        if test "$GCC" = "yes" ; then
+           if test -z "$PRESET_LDFLAGS"; then
+             PTHREAD_LIBS="-pthread"
+		   have_pthread="yes"
+           fi
+        fi
+    	   AC_MSG_RESULT([-pthread])
+        ;;
+     *-solaris2.*)
+         if test "$GCC" = "yes" ; then
+            CFLAGS="$CFLAGS -pthreads"
+            PTHREAD_CFLAGS="-pthreads"
+		  AC_MSG_RESULT([-pthreads])
+         else
+            CFLAGS="$CFLAGS -mt"
+            PTHREAD_CFLAGS="-mt"
+   	      AC_MSG_RESULT([-mt])
+         fi
+	    have_pthread="yes"
+         ;;
+	*)
+   	   AC_MSG_RESULT([no])
+ 	   ;;
+esac
+
+if test "$have_pthread" != "yes"; then
+   AC_CHECK_LIB(pthread, main, have_pthread=yes, have_pthread=no)
+   if test "$have_pthread" = "yes"; then
+	 PTHREAD_LIBS="-lpthread"
+   fi
+fi
+
+dnl
+dnl Pthread RW-Lock
+dnl
+AC_MSG_CHECKING([for pthread_rwlock_t support])
+
+have_pthread_rwlock_t=yes
+AC_TRY_COMPILE([#include <pthread.h>],
+			[pthread_rwlock_t rwlock; pthread_rwlock_init( &rwlock, NULL);],
+			compiled=yes, compiled=no)
+
+if test "$compiled" = "yes"; then
+   	AC_MSG_RESULT([ok])
+else
+     dnl Didn't find rwlock_t.
+     dnl Try defining _XOPEN_SOURCE=500
+     dnl
+	oldcflags2="$CFLAGS"
+	CFLAGS="$CFLAGS -D_XOPEN_SOURCE=500"
+
+	AC_TRY_COMPILE([#include <pthread.h>],
+			    [pthread_rwlock_t rwlock; pthread_rwlock_init( &rwlock, NULL);],
+			    compiled=yes, compiled=no)
+
+	if test "$compiled" = "yes"; then
+	    AC_MSG_RESULT([-D_XOPEN_SOURCE=500])
+	    PTHREAD_CFLAGS="-D_XOPEN_SOURCE=500"
+	else
+	    have_pthread_rwlock_t=no
+	    AC_MSG_RESULT([no])
+	fi
+
+	CFLAGS="$oldcflags2"
+fi
+
+if test "$have_pthread_rwlock_t" = "yes"; then
+	AC_DEFINE(HAVE_PTHREAD_RWLOCK_T, 1, [Define if your pthread library includes pthread_rwlock_t])
+else
+	AC_MSG_ERROR([pthread_rwlock_t support missing])
+fi
+
+dnl Set sched policy
+AC_CHECK_FUNC(pthread_attr_setschedpolicy, have_pthread_attr_setschedpolicy=yes)
+if test x"$have_pthread_attr_setschedpolicy" = "xyes"; then
+     AC_DEFINE(HAVE_PTHREAD_SETSCHEDPOLICY, 1, [Pthread support pthread_attr_setschedpolicy])
+fi
+
+save_LIBS="$LIBS"
+LIBS="$LIBS $PTHREAD_LIBS"
+
+AC_CHECK_FUNCS(pthread_mutexattr_settype pthread_mutexattr_setkind_np)
+
+dnl Yield Support
+AC_CHECK_FUNCS(sched_yield, , [
+   AC_CHECK_LIB(rt, sched_yield, [
+       AC_DEFINE(HAVE_SCHED_YIELD)
+	  PTHREAD_LIBS="$PTHREAD_LIBS -lrt"
+   ],[
+       AC_CHECK_LIB(posix4, sched_yield, [
+	  AC_DEFINE(HAVE_SCHED_YIELD)
+	  PTHREAD_LIBS="$PTHREAD_LIBS -lposix4"
+   ])])
+])
+
+LIBS="$save_LIBS"
+CFLAGS="$oldcflags"
+
+if test "$have_pthread" = "yes"; then
+   	AC_DEFINE(HAVE_PTHREAD, 1, [Have pthread support])
+	AC_SUBST(PTHREAD_CFLAGS)
+	AC_SUBST(PTHREAD_LIBS)
+else
+   AC_MSG_ERROR([Pthread support is required])
+fi
+
+
+dnl
+dnl Check for GNU getopt_long()
+dnl
+AC_CHECK_HEADERS(getopt.h)
+AC_CHECK_FUNC(getopt_long, have_getopt_long="yes")
+
+AM_CONDITIONAL(USE_EMBEDED_GETOPT, test "x$have_getopt_long" = "xyes")
+
+if test "x$have_getopt_long" = "xyes"; then
+   AC_DEFINE(HAVE_GETOPT_LONG, 1, [Support for getopt_long()])
+fi
+
+
+dnl
+dnl Libev
+dnl
+AC_CHECK_LIB([ev], [ev_run], [have_libev=yes],[have_libev=no])
+AC_CHECK_HEADER(ev.h, [have_libev_h=yes], [have_libev_h=no])
+
+if test "$have_libev $have_libev_h" != "yes yes"; then
+  AC_MSG_ERROR([libev missing])
+fi
+
+
+dnl
+dnl Zlib
+dnl
+AC_CHECK_LIB([z], [inflateEnd], [have_zlib=yes], [have_zlib=no])
+AC_CHECK_HEADER(zlib.h, [have_zlib_h=yes], [have_zlib_h=no])
+
+if test "$have_zlib $have_zlib_h" != "yes yes"; then
+  AC_MSG_ERROR([zlib missing])
+fi
+
+
+dnl
+dnl OpenSSL
+dnl
+PKG_CHECK_MODULES([OPENSSL], [openssl >= 1.0.1])
+
+
+dnl
+dnl Defaults
+dnl
+AC_ARG_WITH(wwwroot, AC_HELP_STRING([--with-wwwroot=DIR], [Set the WWW root directory]),
+		  WWW_ROOT="$withval", [
+   dnl MacOS X
+   if test -d "/Library/WebServer/Documents"; then
+	   WWW_ROOT="/Library/WebServer/Documents"
+   dnl Some Linux
+   elif test -d "/srv/www/htdocs"; then
+	   WWW_ROOT="/srv/www/htdocs"
+   dnl Default
+   else
+	   WWW_ROOT="$localstatedir/www"
+   fi
+])
+
+AC_ARG_WITH(cgiroot, AC_HELP_STRING([--with-cgiroot=DIR], [Set the CGI directory]),
+		  CGI_ROOT="$withval", [
+   dnl MacOS X
+   if test -d "/Library/WebServer/CGI-Executables"; then
+	   CGI_ROOT="/Library/WebServer/CGI-Executables"
+   dnl Some Linux
+   elif test -d "/srv/www/cgi-bin"; then
+	   CGI_ROOT="/srv/www/cgi-bin"
+   dnl Default
+   else
+	   CGI_ROOT="$prefix/lib/cgi-bin"
+   fi
+])
+
+AC_ARG_WITH(wwwuser, AC_HELP_STRING([--with-wwwuser=USER], [Set default execution user]),
+		  WWW_USER="$withval", WWW_USER="")
+AC_ARG_WITH(wwwgroup, AC_HELP_STRING([--with-wwwgroup=GROUP], [Set default execution group]),
+		  WWW_GROUP="$withval", WWW_GROUP="")
+
+AC_SUBST(WWW_ROOT)
+AC_SUBST(CGI_ROOT)
+AC_SUBST(WWW_USER)
+AC_SUBST(WWW_GROUP)
+
+
+dnl
+dnl OS string
+dnl
+AC_ARG_ENABLE(os_string, AC_HELP_STRING([--enable-os-string=STR], [Set a customized OS type string]), [os_string="$enableval"])
+AC_DEFINE_UNQUOTED(OS_TYPE, "${os_string}", [OS type])
+
+AM_CONDITIONAL(PLATFORM_WIN32, test x"$os_string" = "xWin32")
+
+
+dnl
+dnl Tracing
+dnl
+AC_ARG_ENABLE(trace, AC_HELP_STRING([--enable-trace], [Enable trace facility]),
+   [enable_trace="$enableval"
+    AC_DEFINE(TRACE_ENABLED, 1, [Trace facility])
+   ], [enable_trace="no"])
+
+
+dnl
+dnl Output files
+dnl
+
+AC_OUTPUT([
+Makefile
+m4/Makefile
+src/Makefile
+])
+
+echo
+echo ============================
+echo "Install prefix        $prefix"
+echo "CFLAGS                $CFLAGS"
+echo "trace                 $enable_trace"
+echo "backtracing           $enable_backtraces"
+if test "x$is_beta" = "xyes"; then
+echo "Beta release          $PACKAGE_PATCH_VERSION"
+fi
+echo
+eval eval echo "Installation dir      $bindir"
+echo ============================
+echo
+if test "x$http2dpath" != "x" ; then
+	echo Warning: You have an old copy of http2d at http2dpath.
+	echo
+fi
+
+cat <<THEEND
++------------------------------------------------------------------+
+| License:                                                         |
+| This software is subject to the BSD License, available in this   |
+| distribution in the file LICENSE. Please, remember that any copy |
+| distribution or modification of the software is subject to it.   |
++------------------------------------------------------------------+
+
+Thank you for using HTTP2d.
+THEEND

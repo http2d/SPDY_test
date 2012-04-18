@@ -1,0 +1,12 @@
+server!bind!1!port = 80
+server!bind!2!port = 443
+server!bind!2!tls = 1
+server!bind!2!spdy = 1
+server!bind!3!port = 6121
+server!bind!3!spdy = 1
+
+vserver!1!nick = default
+vserver!1!document_root = /tmp
+vserver!1!ssl_certificate_file = /Users/alo/starssl/ssl.crt
+vserver!1!ssl_certificate_key_file = /Users/alo/starssl/ssl.key
+vserver!1!ssl_ca_list_file = /Users/alo/starssl/ca.pem
