@@ -38,11 +38,8 @@
 #include "socket.h"
 #include "list.h"
 #include "bind.h"
-#include "connection-spdy.h"
-#include "connection-http.h"
 #include "request.h"
 #include <ev.h>
-
 
 typedef enum {
 	conn_close_open,
@@ -50,6 +47,9 @@ typedef enum {
 	conn_close_linger_read,
 	conn_close_closed
 } http2d_conn_close_phase_t;
+
+typedef void  (* http2d_conn_free) (void *conn);
+typedef ret_t (* http2d_conn_step) (void *conn);
 
 typedef struct {
 	http2d_list_t             listed;
@@ -68,20 +68,22 @@ typedef struct {
 	void                     *bind;
 	void                     *srv;
 
-	/* Protocol specific */
-	union {
-		http2d_connection_spdy_guts_t spdy;
-		http2d_connection_http_guts_t http;
-	} guts;
+	/* Virtual methods */
+	struct {
+		http2d_conn_free free;
+		http2d_conn_step step;
+	} methods;
 
 } http2d_connection_t;
 
 #define CONN(c)     ((http2d_connection_t *)(c))
 #define CONN_SRV(c) SRV(CONN(c)->srv)
 
-ret_t http2d_connection_new  (http2d_connection_t **conn);
-ret_t http2d_connection_free (http2d_connection_t  *conn);
-ret_t http2d_connection_step (http2d_connection_t  *conn);
+ret_t http2d_connection_init_base (http2d_connection_t *conn);
+ret_t http2d_connection_mrproper  (http2d_connection_t *conn);
+
+void  http2d_connection_free      (http2d_connection_t *conn);
+ret_t http2d_connection_step      (http2d_connection_t  *conn);
 
 ret_t http2d_connection_move_to_active  (http2d_connection_t *conn);
 ret_t http2d_connection_move_to_polling (http2d_connection_t *conn, int mode);

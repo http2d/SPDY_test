@@ -40,6 +40,58 @@
 #include "spdy-zlib.h"
 
 
+static void  conn_spdy_free (http2d_connection_spdy_t *conn);
+static ret_t conn_spdy_step (http2d_connection_spdy_t *conn);
+
+
+ret_t
+http2d_connection_spdy_new (http2d_connection_spdy_t **conn)
+{
+	ret_t ret;
+	HTTP2D_NEW_STRUCT (n, connection_spdy);
+
+	/* Base class */
+	ret = http2d_connection_init_base (&n->base);
+	if (unlikely (ret != ret_ok))
+		return ret;
+
+	/* Zlib */
+	ret = http2d_spdy_zlib_inflate_init (&n->zst_inflate);
+	if (unlikely (ret != ret_ok))
+		return ret_error;
+
+	ret = http2d_spdy_zlib_deflate_init (&n->zst_deflate);
+	if (unlikely (ret != ret_ok))
+		return ret_error;
+
+	/* SPDY properties */
+	n->ID         = 0;
+	n->going_away = false;
+
+	/* Methods */
+	n->base.methods.free = (http2d_conn_free) conn_spdy_free;
+	n->base.methods.step = (http2d_conn_step) conn_spdy_step;
+
+	*conn = n;
+	return ret_ok;
+}
+
+
+static void
+conn_spdy_free (http2d_connection_spdy_t *conn)
+{
+	/* Clean up base object */
+	http2d_connection_mrproper (&conn->base);
+
+	/* Zlib */
+	deflateEnd (&conn->zst_inflate);
+	deflateEnd (&conn->zst_deflate);
+
+	/* Free the obj */
+	free (conn);
+}
+
+
 static ret_t
 read_name_value (z_stream *zst, http2d_buffer_t *buf, int pos, http2d_header_t *header)
 {
@@ -79,10 +131,10 @@ read_name_value (z_stream *zst, http2d_buffer_t *buf, int pos, http2d_header_t *
 
 
 static ret_t
-handle_SPDY_SYN_STREAM (http2d_connection_t *conn,
-			http2d_buffer_t     *buf,
-			http2d_spdy_ctrl_t  *ctrl,
-			int                 *pos)
+handle_SPDY_SYN_STREAM (http2d_connection_spdy_t *conn,
+			http2d_buffer_t          *buf,
+			http2d_spdy_ctrl_t       *ctrl,
+			int                      *pos)
 {
 	ret_t                     ret;
 	http2d_avl_t              headers;
@@ -91,11 +143,11 @@ handle_SPDY_SYN_STREAM (http2d_connection_t *conn,
 	http2d_request_t         *req       = NULL;
 
 	/* GO_AWAY received? Ignore it. */
-	if (conn->guts.spdy.going_away)
+	if (conn->going_away)
 		return ret_ok;
 
 	/* Create a new request */
-	ret = _http2d_connection_new_req (conn, &req);
+	ret = _http2d_connection_new_req (CONN(conn), &req);
 	if (unlikely (ret != ret_ok)) {
 		goto error;
 	}
@@ -110,7 +162,7 @@ handle_SPDY_SYN_STREAM (http2d_connection_t *conn,
 	syn_ctrl.slot            = p[9];
 	p += 10;
 
-	conn->guts.spdy.ID = syn_ctrl.stream_id;
+	conn->ID = syn_ctrl.stream_id;
 
 	printf ("stream id = %d\n",       syn_ctrl.stream_id);
 	printf ("stream assoc id = %d\n", syn_ctrl.assoc_stream_id);
@@ -118,7 +170,7 @@ handle_SPDY_SYN_STREAM (http2d_connection_t *conn,
 	printf ("slot      = %d\n",       syn_ctrl.slot);
 
 	/* Parse headers */
-	ret = read_name_value (&conn->guts.spdy.zst_inflate, buf, p - buf->buf, &req->header);
+	ret = read_name_value (&conn->zst_inflate, buf, p - buf->buf, &req->header);
 	if (ret != ret_ok) {
 		goto error;
 	}
@@ -136,10 +188,10 @@ error:
 
 
 static ret_t
-handle_SPDY_GOAWAY (http2d_connection_t *conn,
-		    http2d_buffer_t     *buf,
-		    http2d_spdy_ctrl_t  *ctrl,
-		    int                 *pos)
+handle_SPDY_GOAWAY (http2d_connection_spdy_t *conn,
+		    http2d_buffer_t          *buf,
+		    http2d_spdy_ctrl_t       *ctrl,
+		    int                      *pos)
 {
 	ret_t                  ret;
 	http2d_spdy_go_away_t  away_ctrl;
@@ -157,17 +209,17 @@ handle_SPDY_GOAWAY (http2d_connection_t *conn,
 	printf ("go away: last good=%d, status code: %d\n", away_ctrl.last_good_id, away_ctrl.status_code);
 
 	/* Update the connection phase */
-	conn->phase = phase_conn_spdy_shutdown;
-	conn->guts.spdy.going_away = true;
+	CONN_BASE(conn)->phase = phase_conn_spdy_shutdown;
+	conn->going_away  = true;
 
 	return ret_ok;
 }
 
 static ret_t
-handle_SPDY_RST_STREAM (http2d_connection_t *conn,
-			http2d_buffer_t     *buf,
-			http2d_spdy_ctrl_t  *ctrl,
-			int                 *pos)
+handle_SPDY_RST_STREAM (http2d_connection_spdy_t *conn,
+			http2d_buffer_t          *buf,
+			http2d_spdy_ctrl_t       *ctrl,
+			int                      *pos)
 {
 	ret_t                     ret;
 	http2d_spdy_rst_stream_t  rst_ctrl;
@@ -209,9 +261,9 @@ handle_SPDY_RST_STREAM (http2d_connection_t *conn,
 
 
 static ret_t
-spdy_process_frame (http2d_connection_t *conn,
-		    http2d_buffer_t     *buf,
-		    int                 *pos)
+spdy_process_frame (http2d_connection_spdy_t *conn,
+		    http2d_buffer_t          *buf,
+		    int                      *pos)
 {
 	ret_t               ret;
 	http2d_spdy_ctrl_t  ctrl;
@@ -280,8 +332,8 @@ spdy_process_frame (http2d_connection_t *conn,
 
 
 static ret_t
-spdy_process_buffer (http2d_connection_t *conn,
-		     http2d_buffer_t     *buf)
+spdy_process_buffer (http2d_connection_spdy_t *conn,
+		     http2d_buffer_t          *buf)
 {
 	ret_t ret;
 	int   pos  = 0;
@@ -311,28 +363,29 @@ spdy_process_buffer (http2d_connection_t *conn,
 
 
 static ret_t
-do_io (http2d_connection_t *conn)
+do_io (http2d_connection_spdy_t *conn)
 {
-	ret_t            ret;
-	http2d_list_t   *i, *j;
-	int              wanted_io = 0;
-	http2d_thread_t *thd       = THREAD(conn->thread);
+	ret_t                ret;
+	http2d_list_t       *i, *j;
+	int                  wanted_io = 0;
+	http2d_connection_t *conn_base = CONN_BASE(conn);
+	http2d_thread_t     *thd       = THREAD(conn_base->thread);
 
 	printf ("SPDY do io\n");
 
 	/* Read
 	 */
-	ret = _http2d_connection_do_read (conn, &wanted_io);
+	ret = _http2d_connection_do_read (conn_base, &wanted_io);
 	switch (ret) {
 	case ret_ok:
 		break;
 	case ret_eagain:
 		if (wanted_io != 0) {
-			http2d_connection_move_to_polling (conn, wanted_io);
+			http2d_connection_move_to_polling (conn_base, wanted_io);
 		}
 		return ret_ok;
 	case ret_eof:
-		http2d_thread_recycle_conn (thd, conn);
+		http2d_thread_recycle_conn (thd, conn_base);
 		break;
 	default:
 		RET_UNKNOWN (ret);
@@ -340,16 +393,16 @@ do_io (http2d_connection_t *conn)
 
 	/* Process what's in the buffer
 	 */
-	if (! http2d_buffer_is_empty (&conn->buffer_read))
+	if (! http2d_buffer_is_empty (&conn_base->buffer_read))
 	{
-		ret = spdy_process_buffer (conn, &conn->buffer_read);
+		ret = spdy_process_buffer (conn, &conn_base->buffer_read);
 		switch (ret) {
 		case ret_ok:
 			break;
 		case ret_eagain:
 			goto write;
 		case ret_error:
-			http2d_thread_recycle_conn (thd, conn);
+			http2d_thread_recycle_conn (thd, conn_base);
 			break;
 		default:
 			SHOULDNT_HAPPEN;
@@ -359,7 +412,7 @@ do_io (http2d_connection_t *conn)
 
 	/* Process requests
 	 */
-	list_for_each_safe (i, j, &conn->requests) {
+	list_for_each_safe (i, j, &conn_base->requests) {
 		ret = http2d_request_step (REQ(i), &wanted_io);
 		switch (ret) {
 		case ret_ok:
@@ -377,20 +430,20 @@ do_io (http2d_connection_t *conn)
 write:
 	/* Write
 	 */
-	if ((! http2d_buffer_is_empty (&conn->buffer_write)) ||
-	    (! http2d_buffer_is_empty (&conn->buffer_write_ssl)))
+	if ((! http2d_buffer_is_empty (&conn_base->buffer_write)) ||
+	    (! http2d_buffer_is_empty (&conn_base->buffer_write_ssl)))
 	{
-		ret = _http2d_connection_do_write (conn, &wanted_io);
+		ret = _http2d_connection_do_write (conn_base, &wanted_io);
 		switch (ret) {
 		case ret_ok:
 			break;
 		case ret_eagain:
 			if (wanted_io != 0) {
-				http2d_connection_move_to_polling (conn, wanted_io);
+				http2d_connection_move_to_polling (conn_base, wanted_io);
 			}
 			return ret_ok;
 		case ret_eof:
-			http2d_thread_recycle_conn (thd, conn);
+			http2d_thread_recycle_conn (thd, conn_base);
 			break;
 		default:
 			RET_UNKNOWN (ret);
@@ -401,17 +454,18 @@ write:
 }
 
 
-ret_t
-http2d_connection_spdy_step (http2d_connection_t *conn)
+static ret_t
+conn_spdy_step (http2d_connection_spdy_t *conn)
 {
-	ret_t            ret;
-	int              wanted_io = 0;
-	http2d_thread_t *thd       = THREAD(conn->thread);
+	ret_t                ret;
+	int                  wanted_io = 0;
+	http2d_connection_t *conn_base = CONN_BASE(conn);
+	http2d_thread_t     *thd       = THREAD(conn_base->thread);
 
-	switch (conn->phase) {
+	switch (conn_base->phase) {
 	case phase_conn_spdy_handshake:
-		if (conn->socket.is_tls == TLS) {
-			ret = _http2d_socket_ssl_init (&conn->socket, conn, &wanted_io);
+		if (conn_base->socket.is_tls == TLS) {
+			ret = _http2d_socket_ssl_init (&conn_base->socket, conn_base, &wanted_io);
 			switch (ret) {
 			case ret_ok:
 				break;
@@ -419,7 +473,7 @@ http2d_connection_spdy_step (http2d_connection_t *conn)
 				return ret;
 			case ret_eagain:
 				if (wanted_io != 0) {
-					http2d_connection_move_to_polling (conn, wanted_io);
+					http2d_connection_move_to_polling (conn_base, wanted_io);
 				}
 				return ret_ok;
 
@@ -428,7 +482,7 @@ http2d_connection_spdy_step (http2d_connection_t *conn)
 				return ret_error;
 			}
 		}
-		conn->phase = phase_conn_spdy_io;
+		conn_base->phase = phase_conn_spdy_io;
 
 	case phase_conn_spdy_io:
 		ret = do_io (conn);
@@ -447,26 +501,26 @@ http2d_connection_spdy_step (http2d_connection_t *conn)
 
 	case phase_conn_spdy_shutdown:
 	case_phase_conn_spdy_shutdown:
-		ret = _http2d_connection_do_shutdown (conn);
+		ret = _http2d_connection_do_shutdown (conn_base);
 		if (ret != ret_ok) {
 			return ret;
 		}
-		conn->phase = phase_conn_spdy_shutdown;
+		conn_base->phase = phase_conn_spdy_shutdown;
 
 	case phase_conn_spdy_linger_read:
 		wanted_io = -1;
 
-		ret = _http2d_connection_do_linger_read (conn, &wanted_io);
+		ret = _http2d_connection_do_linger_read (conn_base, &wanted_io);
 		switch (ret) {
 		case ret_eagain:
 			if (wanted_io != -1) {
-				http2d_connection_move_to_polling (conn, wanted_io);
+				http2d_connection_move_to_polling (conn_base, wanted_io);
 				return ret_ok;
 			}
 			break;
 		case ret_eof:
 		case ret_error:
-			http2d_thread_recycle_conn (thd, conn);
+			http2d_thread_recycle_conn (thd, conn_base);
 			return ret_eof;
 		default:
 			RET_UNKNOWN(ret);
@@ -479,33 +533,4 @@ http2d_connection_spdy_step (http2d_connection_t *conn)
 
 	SHOULDNT_HAPPEN;
 	return ret_error;
-}
-
-ret_t
-http2d_connection_spdy_guts_init (http2d_connection_spdy_guts_t *spdy_guts)
-{
-	ret_t ret;
-
-	ret = http2d_spdy_zlib_inflate_init (&spdy_guts->zst_inflate);
-	if (ret != ret_ok)
-		return ret_error;
-
-	ret = http2d_spdy_zlib_deflate_init (&spdy_guts->zst_deflate);
-	if (ret != ret_ok)
-		return ret_error;
-
-	spdy_guts->ID         = 0;
-	spdy_guts->going_away = false;
-
-	return ret_ok;
-}
-
-
-ret_t
-http2d_connection_spdy_guts_mrproper (http2d_connection_spdy_guts_t *spdy_guts)
-{
-	deflateEnd (&spdy_guts->zst_inflate);
-	deflateEnd (&spdy_guts->zst_deflate);
-
-	return ret_ok;
 }

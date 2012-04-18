@@ -32,8 +32,6 @@
 
 #include "common-internal.h"
 #include "connection.h"
-#include "connection-spdy.h"
-#include "connection-http.h"
 #include "thread.h"
 #include "util.h"
 
@@ -41,44 +39,62 @@
 
 
 ret_t
-http2d_connection_new (http2d_connection_t **conn)
+http2d_connection_init_base (http2d_connection_t *conn)
 {
 	ret_t ret;
-	HTTP2D_NEW_STRUCT (n, connection);
 
-	INIT_LIST_HEAD (&n->listed);
-	INIT_LIST_HEAD (&n->requests);
+	INIT_LIST_HEAD (&conn->listed);
+	INIT_LIST_HEAD (&conn->requests);
 
-	ret = http2d_socket_init (&n->socket);
-	if (ret != ret_ok)
+	ret = http2d_socket_init (&conn->socket);
+	if (unlikely (ret != ret_ok))
 		return ret_error;
 
-	n->thread = NULL;
-	n->bind   = NULL;
-	n->srv    = NULL;
-	n->phase  = 0;
+	conn->thread = NULL;
+	conn->bind   = NULL;
+	conn->srv    = NULL;
+	conn->phase  = 0;
 
-	http2d_protocol_init (&n->protocol);
-	http2d_buffer_init (&n->buffer_read);
-	http2d_buffer_init (&n->buffer_write);
-	http2d_buffer_init (&n->buffer_write_ssl);
+	conn->methods.free = NULL;
+	conn->methods.step = NULL;
 
-	*conn = n;
+	http2d_protocol_init (&conn->protocol);
+	http2d_buffer_init (&conn->buffer_read);
+	http2d_buffer_init (&conn->buffer_write);
+	http2d_buffer_init (&conn->buffer_write_ssl);
+
 	return ret_ok;
 }
 
 
-ret_t
+void
 http2d_connection_free (http2d_connection_t *conn)
 {
-	http2d_list_t *i, *j;
-
-	switch (conn->protocol.session) {
-	case prot_session_SPDY:
-		http2d_connection_spdy_guts_mrproper (&conn->guts.spdy);
-	default:
-		http2d_connection_http_guts_mrproper (&conn->guts.http);
+	if (unlikely (conn->methods.free == NULL)) {
+		SHOULDNT_HAPPEN;
+		return;
 	}
+
+	conn->methods.free (conn);
+}
+
+
+ret_t
+http2d_connection_step (http2d_connection_t *conn)
+{
+	if (unlikely (conn->methods.step == NULL)) {
+		SHOULDNT_HAPPEN;
+		return ret_error;
+	}
+
+	return conn->methods.step (conn);
+}
+
+
+ret_t
+http2d_connection_mrproper (http2d_connection_t *conn)
+{
+	http2d_list_t *i, *j;
 
 	http2d_socket_close (&conn->socket);
 	http2d_socket_mrproper (&conn->socket);
@@ -95,7 +111,6 @@ http2d_connection_free (http2d_connection_t *conn)
 		ev_io_stop (THREAD(conn->thread)->loop, &conn->IO);
 	}
 
-	free (conn);
 	return ret_ok;
 }
 
@@ -145,20 +160,6 @@ http2d_connection_move_to_active (http2d_connection_t *conn)
 	return ret_ok;
 }
 
-
-ret_t
-http2d_connection_step (http2d_connection_t *conn)
-{
-	switch (conn->protocol.session) {
-	case prot_session_SPDY:
-		return http2d_connection_spdy_step (conn);
-	default:
-		return http2d_connection_http_step (conn);
-	}
-
-	SHOULDNT_HAPPEN;
-	return ret_error;
-}
 
 
 /* Internal utility functions

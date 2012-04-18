@@ -37,6 +37,9 @@
 #include "server.h"
 #include "connection.h"
 #include "thread.h"
+#include "connection-spdy.h"
+#include "connection-http.h"
+
 
 ret_t
 http2d_bind_new (http2d_bind_t **bind, void *srv)
@@ -243,7 +246,16 @@ io_cb (struct ev_loop *loop, ev_io *w, int revents)
 
 	/* Create connection
 	 */
-	ret = http2d_connection_new (&conn);
+	if (bind->protocol.session == prot_session_SPDY) {
+		http2d_connection_spdy_t *n;
+		ret = http2d_connection_spdy_new (&n);
+		conn = CONN(n);
+	} else {
+		http2d_connection_http_t *n;
+		ret = http2d_connection_http_new (&n);
+		conn = CONN(n);
+	}
+
 	if ((ret != ret_ok) || (conn == NULL)) {
 		printf ("error2\n");
 		goto error;
@@ -263,12 +275,6 @@ io_cb (struct ev_loop *loop, ev_io *w, int revents)
 	conn->socket.is_tls = bind->socket.is_tls;
 
 	http2d_protocol_copy (&conn->protocol, &bind->protocol);
-
-	if (bind->protocol.session == prot_session_SPDY) {
-		http2d_connection_spdy_guts_init (&conn->guts.spdy);
-	} else {
-		http2d_connection_http_guts_init (&conn->guts.http);
-	}
 
 	/* TODO: */ conn->protocol.application = prot_app_http11; /* TMP! */
 

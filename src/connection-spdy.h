@@ -34,7 +34,8 @@
 #define HTTP2D_CONNECTION_SPDY_H
 
 #include <zlib.h>
-
+#include "common.h"
+#include "connection.h"
 
 typedef enum {
 	phase_conn_spdy_handshake,
@@ -44,14 +45,21 @@ typedef enum {
 } http2d_connection_spdy_phase_t;
 
 typedef struct {
-	z_stream zst_inflate;
-	z_stream zst_deflate;
+	http2d_connection_t base;
+
+	/* SPDY */
 	int32_t  ID;
 	bool     going_away;
-} http2d_connection_spdy_guts_t;
+
+	/* Zlib */
+	z_stream zst_inflate;
+	z_stream zst_deflate;
+} http2d_connection_spdy_t;
+
+#define CONN_BASE(c) (CONN(c))
 
 
-ret_t http2d_connection_spdy_guts_init     (http2d_connection_spdy_guts_t *spdy_guts);
-ret_t http2d_connection_spdy_guts_mrproper (http2d_connection_spdy_guts_t *spdy_guts);
+ret_t http2d_connection_spdy_new (http2d_connection_spdy_t **conn);
+
 
 #endif /* HTTP2D_CONNECTION_SPDY_H */

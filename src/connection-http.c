@@ -36,17 +36,62 @@
 #include "socket-ssl.h"
 
 
-ret_t
-http2d_connection_http_step (http2d_connection_t *conn)
-{
-	ret_t            ret;
-	int              wanted_io = EV_NONE;
-	http2d_thread_t *thd       = THREAD(conn->thread);
+static void  conn_http_free (http2d_connection_http_t *conn);
+static ret_t conn_http_step (http2d_connection_http_t *conn);
 
-	switch (conn->phase) {
+
+ret_t
+http2d_connection_http_new (http2d_connection_http_t **conn)
+{
+	ret_t ret;
+	HTTP2D_NEW_STRUCT (n, connection_http);
+
+	/* Base class */
+	ret = http2d_connection_init_base (&n->base);
+	if (unlikely (ret != ret_ok))
+		return ret;
+
+	/* Properties */
+	ret = http2d_request_init (&n->req, CONN(n));
+	if (unlikely (ret != ret_ok)) {
+		return ret;
+	}
+
+	/* Methods */
+	n->base.methods.free = (http2d_conn_free) conn_http_free;
+	n->base.methods.step = (http2d_conn_step) conn_http_step;
+
+	*conn = n;
+	return ret_ok;
+}
+
+
+static void
+conn_http_free (http2d_connection_http_t *conn)
+{
+	/* Clean up base object */
+	http2d_connection_mrproper (&conn->base);
+
+	/* Properties */
+	http2d_request_mrproper (&conn->req);
+
+	/* Free the obj */
+	free (conn);
+
+}
+
+static ret_t
+conn_http_step (http2d_connection_http_t *conn)
+{
+	ret_t                ret;
+	int                  wanted_io = EV_NONE;
+	http2d_connection_t *conn_base = CONN_BASE(conn);
+	http2d_thread_t     *thd       = THREAD(conn_base->thread);
+
+	switch (conn_base->phase) {
 	case phase_conn_http_handshake:
-		if (conn->socket.is_tls == TLS) {
-			ret = _http2d_socket_ssl_init (&conn->socket, conn, &wanted_io);
+		if (conn_base->socket.is_tls == TLS) {
+			ret = _http2d_socket_ssl_init (&conn_base->socket, conn_base, &wanted_io);
 			switch (ret) {
 			case ret_ok:
 				break;
@@ -54,7 +99,7 @@ http2d_connection_http_step (http2d_connection_t *conn)
 				return ret;
 			case ret_eagain:
 				if (wanted_io != 0) {
-					http2d_connection_move_to_polling (conn, wanted_io);
+					http2d_connection_move_to_polling (conn_base, wanted_io);
 				}
 				return ret_ok;
 
@@ -63,20 +108,20 @@ http2d_connection_http_step (http2d_connection_t *conn)
 				return ret_error;
 			}
 		}
-		conn->phase = phase_conn_http_step;
+		conn_base->phase = phase_conn_http_step;
 
 	case phase_conn_http_step:
-		ret = http2d_request_step (&conn->guts.http.req, &wanted_io);
+		ret = http2d_request_step (&conn->req, &wanted_io);
 		switch (ret) {
 		case ret_ok:
 			break;
 		case ret_eagain:
 			if (wanted_io != 0) {
-				http2d_connection_move_to_polling (conn, wanted_io);
+				http2d_connection_move_to_polling (conn_base, wanted_io);
 			}
 			return ret_ok;
 		case ret_eof:
-			conn->phase = phase_conn_http_shutdown;
+			conn_base->phase = phase_conn_http_shutdown;
 			goto case_phase_conn_http_shutdown;
 		default:
 			RET_UNKNOWN(ret);
@@ -85,26 +130,26 @@ http2d_connection_http_step (http2d_connection_t *conn)
 
 	case phase_conn_http_shutdown:
 	case_phase_conn_http_shutdown:
-		ret = _http2d_connection_do_shutdown (conn);
+		ret = _http2d_connection_do_shutdown (conn_base);
 		if (ret != ret_ok) {
 			return ret;
 		}
-		conn->phase = phase_conn_http_shutdown;
+		conn_base->phase = phase_conn_http_shutdown;
 
 	case phase_conn_http_lingering_read:
 		wanted_io = -1;
 
-		ret = _http2d_connection_do_linger_read (conn, &wanted_io);
+		ret = _http2d_connection_do_linger_read (conn_base, &wanted_io);
 		switch (ret) {
 		case ret_eagain:
 			if (wanted_io != -1) {
-				http2d_connection_move_to_polling (conn, wanted_io);
+				http2d_connection_move_to_polling (conn_base, wanted_io);
 				return ret_ok;
 			}
 			break;
 		case ret_eof:
 		case ret_error:
-			http2d_thread_recycle_conn (thd, conn);
+			http2d_thread_recycle_conn (thd, conn_base);
 			return ret_eof;
 		default:
 			RET_UNKNOWN(ret);
@@ -118,27 +163,4 @@ http2d_connection_http_step (http2d_connection_t *conn)
 
 	SHOULDNT_HAPPEN;
 	return ret_error;
-}
-
-
-ret_t
-http2d_connection_http_guts_init (http2d_connection_http_guts_t *http_guts)
-{
-	ret_t                ret;
-	http2d_connection_t *conn = list_entry (http_guts, http2d_connection_t, guts.http);
-
-	ret = http2d_request_init (&http_guts->req, conn);
-	if (ret != ret_ok) {
-		return ret;
-	}
-
-	return ret_ok;
-}
-
-
-ret_t
-http2d_connection_http_guts_mrproper (http2d_connection_http_guts_t *http_guts)
-{
-	http2d_request_mrproper (&http_guts->req);
-	return ret_ok;
 }

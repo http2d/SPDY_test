@@ -34,6 +34,8 @@
 #define HTTP2D_CONNECTION_HTTP_H
 
 #include "request.h"
+#include "common.h"
+#include "connection.h"
 
 typedef struct {
 	http2d_request_t req;
@@ -48,7 +50,17 @@ typedef enum {
 } http2d_connection_http_phase_t;
 
 
-ret_t http2d_connection_http_guts_init     (http2d_connection_http_guts_t *http_guts);
-ret_t http2d_connection_http_guts_mrproper (http2d_connection_http_guts_t *http_guts);
+typedef struct {
+	http2d_connection_t base;
+
+	/* Request */
+	http2d_request_t    req;
+} http2d_connection_http_t;
+
+#define CONN_BASE(c) (CONN(c))
+
+
+ret_t http2d_connection_http_new (http2d_connection_http_t **conn);
+
 
 #endif /* HTTP2D_CONNECTION_HTTP_H */
