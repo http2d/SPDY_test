@@ -38,26 +38,14 @@
 #include "request.h"
 
 typedef struct {
+	http2d_request_t base;
+
+	/* Properties */
 	int bar;
-} http2d_request_http_guts_t;
+} http2d_request_http_t;
 
 
-/* Request guts
- */
-ret_t http2d_request_http_init                (http2d_request_http_guts_t *req_guts);
-ret_t http2d_request_http_mrproper            (http2d_request_http_guts_t *req_guts);
-
-ret_t http2d_request_http_step                (http2d_request_http_guts_t *req_guts,
-					       int                        *wanted_io);
-ret_t http2d_request_http_header_add          (http2d_request_http_guts_t *req_guts,
-					       http2d_buffer_t            *key,
-					       http2d_buffer_t            *val);
-
-ret_t http2d_request_http_header_add_response (http2d_request_http_guts_t *req_guts);
-ret_t http2d_request_http_header_finish       (http2d_request_http_guts_t *req_guts);
-ret_t http2d_request_http_read_header         (http2d_request_http_guts_t *req_guts, int *wanted_io);
-
-
-
+ret_t http2d_request_http_new      (http2d_request_http_t **req_http, void *conn);
+ret_t http2d_request_http_mrproper (http2d_request_http_t  *req_http);
 
 #endif /* HTTP2D_REQUEST_HTTP_H */

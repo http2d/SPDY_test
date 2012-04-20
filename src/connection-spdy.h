@@ -56,6 +56,7 @@ typedef struct {
 	z_stream zst_deflate;
 } http2d_connection_spdy_t;
 
+#define CONN_SPDY(c) ((http2d_connection_spdy_t *)(c))
 #define CONN_BASE(c) (CONN(c))
 
 

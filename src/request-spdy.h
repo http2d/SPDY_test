@@ -33,7 +33,9 @@
 #ifndef HTTP2D_REQUEST_SPDY_H
 #define HTTP2D_REQUEST_SPDY_H
 
+#include "common.h"
 #include "buffer.h"
+#include "request.h"
 
 typedef enum {
 	phase_spdy_nothing,
@@ -45,24 +47,17 @@ typedef enum {
 	phase_spdy_stepping,
 } http2d_request_spdy_phase_t;
 
+
 typedef struct {
+	http2d_request_t base;
+
+	/* Properties */
 	http2d_buffer_t header;
 	int32_t         header_num;
-} http2d_request_spdy_guts_t;
-
-#define SPDY_GUTS_GET_REQ(r) (list_entry ((r), http2d_request_t, guts.spdy))
+} http2d_request_spdy_t;
 
 
-ret_t http2d_request_spdy_init                (http2d_request_spdy_guts_t *req_guts);
-ret_t http2d_request_spdy_mrproper            (http2d_request_spdy_guts_t *req_guts);
-
-ret_t http2d_request_spdy_step                (http2d_request_spdy_guts_t *req_guts,
-					       int                        *wanted_io);
-ret_t http2d_request_spdy_header_add          (http2d_request_spdy_guts_t *req_guts,
-					       http2d_buffer_t            *key,
-					       http2d_buffer_t            *val);
-
-ret_t http2d_request_spdy_header_add_response (http2d_request_spdy_guts_t *req_guts);
-ret_t http2d_request_spdy_header_finish       (http2d_request_spdy_guts_t *req_guts);
+ret_t http2d_request_spdy_new      (http2d_request_spdy_t **req_spdy, void *conn);
+ret_t http2d_request_spdy_mrproper (http2d_request_spdy_t  *req_spdy);
 
 #endif /* HTTP2D_REQUEST_SPDY_H */

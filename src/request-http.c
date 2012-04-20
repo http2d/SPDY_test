@@ -37,26 +37,27 @@
 
 
 ret_t
-http2d_request_http_init (http2d_request_http_guts_t *req_guts)
+http2d_request_http_new (http2d_request_http_t **req_http,
+			 void                   *conn)
 {
 	return ret_ok;
 }
 
 
 ret_t
-http2d_request_http_mrproper (http2d_request_http_guts_t *req_guts)
+http2d_request_http_mrproper (http2d_request_http_t *req_http)
 {
 	return ret_ok;
 }
 
 
-ret_t
-http2d_request_http_header_add (http2d_request_http_guts_t *http_guts,
-				http2d_buffer_t            *key,
-				http2d_buffer_t            *val)
+static ret_t
+req_http_header_add (http2d_request_http_t *req,
+		     http2d_buffer_t       *key,
+		     http2d_buffer_t       *val)
 {
-	http2d_request_t    *req  = list_entry (http_guts, http2d_request_t, guts.http);
-	http2d_connection_t *conn = CONN(req->conn);
+	http2d_request_t    *req_base = REQ(req);
+	http2d_connection_t *conn     = CONN(req_base->conn);
 
 	http2d_buffer_add_buffer (&conn->buffer_write, key);
 	http2d_buffer_add_str    (&conn->buffer_write, ": ");
@@ -66,21 +67,21 @@ http2d_request_http_header_add (http2d_request_http_guts_t *http_guts,
 }
 
 
-ret_t
-http2d_request_http_header_add_response (http2d_request_http_guts_t *http_guts)
+static ret_t
+req_http_header_add_response (http2d_request_http_t *req)
 {
 	ret_t                ret;
 	cuint_t              str_len;
 	const char          *str      = NULL;
-	http2d_request_t    *req      = list_entry (http_guts, http2d_request_t, guts.http);
-	http2d_connection_t *conn     = CONN(req->conn);
+	http2d_request_t    *req_base = REQ(req);
+	http2d_connection_t *conn     = CONN(req_base->conn);
 
 	/* Status
 	 */
 	str_len = 0;
 	str     = NULL;
 
-	ret = http2d_http_code_to_string (req->error_code, &str, &str_len);
+	ret = http2d_http_code_to_string (req_base->error_code, &str, &str_len);
 	if (unlikely ((ret != ret_ok) || (str == NULL) || (str_len == 0))) {
 		return ret_error;
 	}
@@ -103,29 +104,29 @@ http2d_request_http_header_add_response (http2d_request_http_guts_t *http_guts)
 }
 
 
-ret_t
-http2d_request_http_header_finish (http2d_request_http_guts_t *http_guts)
+static ret_t
+req_http_header_finish (http2d_request_http_t *req)
 {
-	http2d_request_t    *req  = list_entry (http_guts, http2d_request_t, guts.http);
-	http2d_connection_t *conn = CONN(req->conn);
+	http2d_request_t    *req_base = REQ(req);
+	http2d_connection_t *conn     = CONN(req_base->conn);
 
 	http2d_buffer_add_str (&conn->buffer_write, CRLF_CRLF);
 	return ret_ok;
 }
 
 
-ret_t
-http2d_request_http_read_header (http2d_request_http_guts_t *req_guts,
-				 int                        *wanted_io)
+static ret_t
+req_http_read_header (http2d_request_http_t *req,
+		      int                   *wanted_io)
 {
 	// TODO
 	return ret_ok;
 }
 
 
-ret_t
-http2d_request_http_step (http2d_request_http_guts_t *req_guts,
-			  int                        *wanted_io)
+static ret_t
+req_http_step (http2d_request_http_t *req,
+	       int                   *wanted_io)
 {
 	return ret_ok;
 }

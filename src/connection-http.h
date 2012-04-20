@@ -51,10 +51,10 @@ typedef enum {
 
 
 typedef struct {
-	http2d_connection_t base;
+	http2d_connection_t  base;
 
 	/* Request */
-	http2d_request_t    req;
+	http2d_request_t    *req;
 } http2d_connection_http_t;
 
 #define CONN_BASE(c) (CONN(c))

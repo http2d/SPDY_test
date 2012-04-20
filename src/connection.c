@@ -34,6 +34,8 @@
 #include "connection.h"
 #include "thread.h"
 #include "util.h"
+#include "request-spdy.h"
+#include "request-http.h"
 
 #define ENTRIES "conn"
 
@@ -245,26 +247,24 @@ _http2d_connection_new_req (http2d_connection_t  *conn,
 	http2d_request_t *new_req;
 
 	/* New request obj */
-	ret = http2d_request_new (&new_req, conn);
+	if (conn->protocol.session == prot_session_SPDY) {
+		http2d_request_spdy_t *n = NULL;
+
+		ret = http2d_request_spdy_new (&n, conn);
+		new_req = REQ(n);
+	}
+	else {
+		http2d_request_http_t *n = NULL;
+
+		ret = http2d_request_http_new (&n, conn);
+		new_req = REQ(n);
+	}
+
 	if (ret != ret_ok) {
 		return ret_error;
 	}
 
 	http2d_list_add (&new_req->listed, &conn->requests);
-
-	/* Initialize it properly */
-	switch (conn->protocol.session) {
-	case prot_session_SPDY:
-		ret = http2d_request_spdy_init (&new_req->guts.spdy);
-		break;
-	default:
-		ret = http2d_request_http_init (&new_req->guts.http);
-		break;
-	}
-
-	if (unlikely (ret != ret_ok)) {
-		return ret_error;
-	}
 
 	*req = new_req;
 	return ret_ok;

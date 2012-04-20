@@ -34,6 +34,7 @@
 #include "connection-http.h"
 #include "thread.h"
 #include "socket-ssl.h"
+#include "request-http.h"
 
 
 static void  conn_http_free (http2d_connection_http_t *conn);
@@ -51,11 +52,9 @@ http2d_connection_http_new (http2d_connection_http_t **conn)
 	if (unlikely (ret != ret_ok))
 		return ret;
 
-	/* Properties */
-	ret = http2d_request_init (&n->req, CONN(n));
-	if (unlikely (ret != ret_ok)) {
-		return ret;
-	}
+	/* Properties
+	 */
+	n->req = NULL;
 
 	/* Methods */
 	n->base.methods.free = (http2d_conn_free) conn_http_free;
@@ -72,8 +71,10 @@ conn_http_free (http2d_connection_http_t *conn)
 	/* Clean up base object */
 	http2d_connection_mrproper (&conn->base);
 
-	/* Properties */
-	http2d_request_mrproper (&conn->req);
+	/* Request */
+	if (conn->req != NULL) {
+		http2d_request_free (conn->req);
+	}
 
 	/* Free the obj */
 	free (conn);
@@ -111,7 +112,7 @@ conn_http_step (http2d_connection_http_t *conn)
 		conn_base->phase = phase_conn_http_step;
 
 	case phase_conn_http_step:
-		ret = http2d_request_step (&conn->req, &wanted_io);
+		ret = http2d_request_step (conn->req, &wanted_io);
 		switch (ret) {
 		case ret_ok:
 			break;

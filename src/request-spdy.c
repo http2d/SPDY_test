@@ -37,65 +37,98 @@
 #include "buffer.h"
 #include "spdy.h"
 #include "spdy-zlib.h"
+#include "connection-spdy.h"
+
+static ret_t req_spdy_header_add    (http2d_request_spdy_t *req_spdy, http2d_buffer_t *key, http2d_buffer_t *val);
+static ret_t req_spdy_header_base   (http2d_request_spdy_t *req_spdy);
+static ret_t req_spdy_header_finish (http2d_request_spdy_t *req_spdy);
+static ret_t req_spdy_step          (http2d_request_spdy_t *req_spdy, int *wanted_io);
+static void  req_spdy_free          (http2d_request_spdy_t *req_spdy);
 
 
 ret_t
-http2d_request_spdy_init (http2d_request_spdy_guts_t *spdy_guts)
+http2d_request_spdy_new (http2d_request_spdy_t **req_spdy, void *conn)
 {
-	http2d_request_t *req = SPDY_GUTS_GET_REQ(spdy_guts);
+	ret_t ret;
+	HTTP2D_NEW_STRUCT (n, request_spdy);
 
-	http2d_buffer_init (&spdy_guts->header);
-	spdy_guts->header_num = 0;
+	/* Base class */
+	ret = http2d_request_init_base (&n->base, conn);
+	if (unlikely (ret != ret_ok))
+		return ret;
 
-	req->phase = phase_spdy_nothing;
+	/* Properties */
+	http2d_buffer_init (&n->header);
 
+	n->header_num = 0;
+	n->base.phase = phase_spdy_nothing;
+
+	/* Methods */
+	n->base.methods.free          = (http2d_req_free) req_spdy_free;
+	n->base.methods.step          = (http2d_req_step) req_spdy_step;
+	n->base.methods.header_base   = (http2d_req_header_base) req_spdy_header_base;
+	n->base.methods.header_add    = (http2d_req_header_add) req_spdy_header_add;
+	n->base.methods.header_finish = (http2d_req_header_finish) req_spdy_header_finish;
+
+	/* Return */
+	*req_spdy = n;
 	return ret_ok;
 }
 
 
-ret_t
-http2d_request_spdy_mrproper (http2d_request_spdy_guts_t *req_guts)
+static ret_t
+req_spdy_mrproper (http2d_request_spdy_t *req_spdy)
 {
-	http2d_buffer_mrproper (&req_guts->header);
-	req_guts->header_num = 0;
-
-	return ret_ok;
+	http2d_buffer_mrproper (&req_spdy->header);
+	req_spdy->header_num = 0;
 }
 
 
-ret_t
-http2d_request_spdy_header_add (http2d_request_spdy_guts_t *spdy_guts,
-				http2d_buffer_t            *key,
-				http2d_buffer_t            *val)
+static void
+req_spdy_free (http2d_request_spdy_t *req_spdy)
+{
+	/* Clean up base object */
+	http2d_request_mrproper (REQ(req_spdy));
+
+	/* Mr Proper*/
+	req_spdy_mrproper (req_spdy);
+	free (req_spdy);
+}
+
+
+static ret_t
+req_spdy_header_add (http2d_request_spdy_t *req_spdy,
+		     http2d_buffer_t       *key,
+		     http2d_buffer_t       *val)
 {
 	int32_t n;
 
 	/* Render the header entry */
 	n = htonl(key->len);
-	http2d_buffer_add (&spdy_guts->header, (char*)&n, sizeof(int32_t));
-	http2d_buffer_add (&spdy_guts->header, key->buf, key->len);
+	http2d_buffer_add (&req_spdy->header, (char*)&n, sizeof(int32_t));
+	http2d_buffer_add (&req_spdy->header, key->buf, key->len);
 
 	n = htonl(val->len);
-	http2d_buffer_add (&spdy_guts->header, (char*)&n, sizeof(int32_t));
-	http2d_buffer_add (&spdy_guts->header, val->buf, val->len);
+	http2d_buffer_add (&req_spdy->header, (char*)&n, sizeof(int32_t));
+	http2d_buffer_add (&req_spdy->header, val->buf, val->len);
 
 	/* Update the counter */
-	spdy_guts->header_num += 1;
+	req_spdy->header_num += 1;
 
 	return ret_ok;
 }
 
 
 
-ret_t
-http2d_request_spdy_header_add_response (http2d_request_spdy_guts_t *spdy_guts)
+static ret_t
+req_spdy_header_base (http2d_request_spdy_t *req_spdy)
 {
 	ret_t                ret;
 	http2d_buffer_t      key;
 	http2d_buffer_t      val;
 	cuint_t              str_len;
 	const char          *str      = NULL;
-	http2d_request_t    *req      = SPDY_GUTS_GET_REQ(spdy_guts);
+	http2d_request_t    *req      = REQ(req_spdy);
 	http2d_connection_t *conn     = CONN(req->conn);
 
 	/* Status
@@ -111,7 +144,7 @@ http2d_request_spdy_header_add_response (http2d_request_spdy_guts_t *spdy_guts)
 	http2d_buffer_fake_str (&key, ":status");
 	http2d_buffer_fake (&val, str, str_len);
 
-	http2d_request_spdy_header_add (spdy_guts, &key, &val);
+	req_spdy_header_add (req_spdy, &key, &val);
 
 	/* version
 	 */
@@ -128,38 +161,39 @@ http2d_request_spdy_header_add_response (http2d_request_spdy_guts_t *spdy_guts)
 
 	printf ("str '%s'\n", str);
 
-	http2d_request_spdy_header_add (spdy_guts, &key, &val);
+	req_spdy_header_add (req_spdy, &key, &val);
 
 	return ret_ok;
 }
 
 
-ret_t
-http2d_request_spdy_header_finish (http2d_request_spdy_guts_t *spdy_guts)
+static ret_t
+req_spdy_header_finish (http2d_request_spdy_t *req_spdy)
 {
-	int32_t              header_num;
-	int                  buf_len_orig;
-	uint8_t              ctrl[12]      = {0,0,0,0,0,0,0,0,0,0,0,0};
-	http2d_request_t    *req           = SPDY_GUTS_GET_REQ(spdy_guts);
-	http2d_connection_t *conn          = CONN(req->conn);
-	http2d_buffer_t      tmp           = HTTP2D_BUF_INIT;
+	int32_t                   header_num;
+	int                       buf_len_orig;
+	uint8_t                   ctrl[12]      = {0,0,0,0,0,0,0,0,0,0,0,0};
+	http2d_request_t         *req           = REQ(req_spdy);
+	http2d_connection_t      *conn          = CONN(req->conn);
+	http2d_connection_spdy_t *conn_spdy     = CONN_SPDY(req->conn);
+	http2d_buffer_t           tmp           = HTTP2D_BUF_INIT;
 
 	/* Add the leading header number */
-	header_num = htonl (spdy_guts->header_num);
-	http2d_buffer_prepend (&spdy_guts->header, (char*)&header_num, sizeof(int32_t));
+	header_num = htonl (req_spdy->header_num);
+	http2d_buffer_prepend (&req_spdy->header, (char*)&header_num, sizeof(int32_t));
 
 	/* Deflate the header block */
-	http2d_spdy_zlib_deflate (&conn->guts.spdy.zst_deflate, &spdy_guts->header, &tmp);
+	http2d_spdy_zlib_deflate (&conn_spdy->zst_deflate, &req_spdy->header, &tmp);
 
 	/* Build Control Frame header */
-	http2d_spdy_write_syn_reply (ctrl, conn->guts.spdy.ID, 0, tmp.len);
+	http2d_spdy_write_syn_reply (ctrl, conn_spdy->ID, 0, tmp.len);
 
 	/* Add Control + Headers */
 	http2d_buffer_add        (&conn->buffer_write, ctrl, sizeof(ctrl));
 	http2d_buffer_add_buffer (&conn->buffer_write, &tmp);
 
 	http2d_buffer_mrproper (&tmp);
-	http2d_buffer_mrproper (&spdy_guts->header);
+	http2d_buffer_mrproper (&req_spdy->header);
 
 	return ret_ok;
 }
@@ -168,14 +202,15 @@ http2d_request_spdy_header_finish (http2d_request_spdy_guts_t *spdy_guts)
 ret_t
 TEMP_hello_world (http2d_request_t *req)
 {
-	ret_t                ret;
-	uint8_t              ctrl[8]   = {0,0,0,0,0,0,0,0};
-        http2d_connection_t *conn      = CONN(req->conn);
-	char                 payload[] = "Hello World!!!!!!!!!\n";
+	ret_t                     ret;
+	uint8_t                   ctrl[8]   = {0,0,0,0,0,0,0,0};
+        http2d_connection_t      *conn      = CONN(req->conn);
+	http2d_connection_spdy_t *conn_spdy = CONN_SPDY(req->conn);
+	char                      payload[] = "Hello World!!!!!!!!!\n";
 
-	printf ("1 TEMP_hello_world: %d, conn->guts.spdy.ID %d\n", conn->buffer_write.len, conn->guts.spdy.ID);
+	printf ("1 TEMP_hello_world: %d, conn_spdy->ID %d\n", conn->buffer_write.len, conn_spdy->ID);
 
-	http2d_spdy_write_data (ctrl, conn->guts.spdy.ID,
+	http2d_spdy_write_data (ctrl, conn_spdy->ID,
 				SPDY_CTRL_FLAG_FIN, sizeof(payload)-1);
 
         http2d_buffer_add (&conn->buffer_write, ctrl, sizeof(ctrl));
@@ -187,12 +222,12 @@ TEMP_hello_world (http2d_request_t *req)
 }
 
 
-ret_t
-http2d_request_spdy_step (http2d_request_spdy_guts_t *spdy_guts,
-			  int                        *wanted_io)
+static ret_t
+req_spdy_step (http2d_request_spdy_t *req_spdy,
+	       int                   *wanted_io)
 {
 	ret_t             ret;
-	http2d_request_t *req  = SPDY_GUTS_GET_REQ(spdy_guts);
+	http2d_request_t *req  = REQ(req_spdy);
 
 	printf ("request step. phase=%d\n", req->phase);
 
@@ -216,7 +251,7 @@ http2d_request_spdy_step (http2d_request_spdy_guts_t *spdy_guts,
 		// Testing
 		req->error_code = http_ok;
 
-		http2d_request_header_add_response (req);
+		req_spdy_header_base (req_spdy);
 		http2d_request_header_add_common (req);
 		http2d_request_header_finish (req);
 

@@ -38,15 +38,25 @@
 
 
 ret_t
-http2d_request_init (http2d_request_t *req, void *conn)
+http2d_request_init_base (http2d_request_t *req, void *conn)
 {
+	ret_t ret;
+
 	INIT_LIST_HEAD (&req->listed);
+
+	ret = http2d_header_init (&req->header);
+	if (unlikely (ret != ret_ok))
+		return ret_error;
 
 	req->conn       = conn;
 	req->phase      = -1;
 	req->error_code = http_internal_error;
 
-	http2d_header_init (&req->header);
+	req->methods.free          = NULL;
+	req->methods.step          = NULL;
+	req->methods.header_base   = NULL;
+	req->methods.header_add    = NULL;
+	req->methods.header_finish = NULL;
 
 	return ret_ok;
 }
@@ -59,48 +69,28 @@ http2d_request_mrproper (http2d_request_t *req)
 }
 
 
-ret_t
-http2d_request_new (http2d_request_t **req,
-		    void              *conn)
-{
-	ret_t ret;
-	HTTP2D_NEW_STRUCT (n,request);
-
-	ret = http2d_request_init (n, conn);
-	if (unlikely (ret != ret_ok)) {
-		return ret;
-	}
-
-	*req = n;
-	return ret_ok;
-}
-
-
-ret_t
+void
 http2d_request_free (http2d_request_t *req)
 {
-	http2d_request_mrproper (req);
+	if (unlikely (req->methods.free == NULL)) {
+		SHOULDNT_HAPPEN;
+		return;
+	}
 
-	free (req);
-	return ret_ok;
+	req->methods.free (req);
 }
 
 
 ret_t
-http2d_request_step (http2d_request_t *req, int *wanted_io)
+http2d_request_step (http2d_request_t *req,
+		     int              *wanted_io)
 {
-	ret_t                ret;
-	http2d_connection_t *conn = CONN(req->conn);
-
-	switch (conn->protocol.session) {
-	case prot_session_SPDY:
-		return http2d_request_spdy_step (&req->guts.spdy, wanted_io);
-	default:
-		return http2d_request_http_step (&req->guts.http, wanted_io);
+	if (unlikely (req->methods.step == NULL)) {
+		SHOULDNT_HAPPEN;
+		return ret_error;
 	}
 
-	SHOULDNT_HAPPEN;
-	return ret_error;
+	return req->methods.step (req, wanted_io);
 }
 
 
@@ -116,52 +106,36 @@ http2d_request_header_add_common (http2d_request_t *req)
 
 
 ret_t
-http2d_request_header_add_response (http2d_request_t *req)
+http2d_request_header_base (http2d_request_t *req)
 {
-	http2d_connection_t *conn = CONN(req->conn);
-
-	switch (conn->protocol.session) {
-	case prot_session_SPDY:
-		return http2d_request_spdy_header_add_response (&req->guts.spdy);
-	default:
-		return http2d_request_http_header_add_response (&req->guts.http);
+	if (unlikely (req->methods.header_base == NULL)) {
+		SHOULDNT_HAPPEN;
+		return ret_error;
 	}
 
-	SHOULDNT_HAPPEN;
-	return ret_error;
+	return req->methods.header_base (req);
 }
-
 
 ret_t
 http2d_request_header_add (http2d_request_t *req,
 			   http2d_buffer_t  *key,
 			   http2d_buffer_t  *val)
 {
-	http2d_connection_t *conn = CONN(req->conn);
-
-	switch (conn->protocol.session) {
-	case prot_session_SPDY:
-		return http2d_request_spdy_header_add (&req->guts.spdy, key, val);
-	default:
-		return http2d_request_http_header_add (&req->guts.http, key, val);
+	if (unlikely (req->methods.header_add == NULL)) {
+		SHOULDNT_HAPPEN;
+		return ret_error;
 	}
 
-	SHOULDNT_HAPPEN;
-	return ret_error;
+	return req->methods.header_add (req, key, val);
 }
 
 ret_t
 http2d_request_header_finish (http2d_request_t *req)
 {
-	http2d_connection_t *conn = CONN(req->conn);
-
-	switch (conn->protocol.session) {
-	case prot_session_SPDY:
-		return http2d_request_spdy_header_finish (&req->guts.spdy);
-	default:
-		return http2d_request_http_header_finish (&req->guts.http);
+	if (unlikely (req->methods.header_finish == NULL)) {
+		SHOULDNT_HAPPEN;
+		return ret_error;
 	}
 
-	SHOULDNT_HAPPEN;
-	return ret_error;
+	return req->methods.header_finish (req);
 }

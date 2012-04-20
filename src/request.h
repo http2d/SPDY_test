@@ -37,8 +37,12 @@
 #include "buffer.h"
 #include "list.h"
 #include "header.h"
-#include "request-spdy.h"
-#include "request-http.h"
+
+typedef void  (* http2d_req_free)          (void *req);
+typedef ret_t (* http2d_req_step)          (void *req, int *wanted_io);
+typedef ret_t (* http2d_req_header_base)   (void *req);
+typedef ret_t (* http2d_req_header_add)    (void *req, http2d_buffer_t *key, http2d_buffer_t *val);
+typedef ret_t (* http2d_req_header_finish) (void *req);
 
 
 typedef struct {
@@ -50,19 +54,24 @@ typedef struct {
 	/* Response */
 	http2d_http_t           error_code;
 
-	/* Protocol specific */
-	union {
-		http2d_request_spdy_guts_t spdy;
-		http2d_request_http_guts_t http;
-	} guts;
+	/* Virtual methods */
+	struct {
+		http2d_req_free          free;
+		http2d_req_step          step;
+		http2d_req_header_base   header_base;
+		http2d_req_header_add    header_add;
+		http2d_req_header_finish header_finish;
+	} methods;
 
 } http2d_request_t;
 
 #define REQ(r) ((http2d_request_t *)(r))
 
 
-ret_t http2d_request_new      (http2d_request_t **req, void *conn);
-ret_t http2d_request_free     (http2d_request_t  *req);
+ret_t http2d_request_init_base (http2d_request_t *req, void *conn);
+ret_t http2d_request_mrproper  (http2d_request_t *req);
+
+void  http2d_request_free     (http2d_request_t  *req);
 ret_t http2d_request_init     (http2d_request_t  *req, void *conn);
 ret_t http2d_request_mrproper (http2d_request_t  *req);
 
