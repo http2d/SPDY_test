@@ -386,7 +386,7 @@ do_io (http2d_connection_spdy_t *conn)
 		return ret_ok;
 	case ret_eof:
 		http2d_thread_recycle_conn (thd, conn_base);
-		break;
+		return ret_ok;
 	default:
 		RET_UNKNOWN (ret);
 	}
@@ -444,7 +444,7 @@ write:
 			return ret_ok;
 		case ret_eof:
 			http2d_thread_recycle_conn (thd, conn_base);
-			break;
+			return ret_ok;
 		default:
 			RET_UNKNOWN (ret);
 		}
@@ -520,7 +520,6 @@ conn_spdy_step (http2d_connection_spdy_t *conn)
 			break;
 		case ret_eof:
 		case ret_error:
-			http2d_thread_recycle_conn (thd, conn_base);
 			return ret_eof;
 		default:
 			RET_UNKNOWN(ret);
