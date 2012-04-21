@@ -675,7 +675,7 @@ http2d_avl_len (http2d_avl_generic_t *avl, size_t *len)
 
 ret_t
 http2d_avl_mrproper (http2d_avl_generic_t *avl,
-		       http2d_func_free_t    free_func)
+		     http2d_func_free_t    free_func)
 {
 	http2d_avl_generic_node_t *node;
 	http2d_avl_generic_node_t *next;
