@@ -81,4 +81,7 @@ ret_t http2d_request_header_add_common   (http2d_request_t *req);
 ret_t http2d_request_header_add          (http2d_request_t *req, http2d_buffer_t *key, http2d_buffer_t *val);
 ret_t http2d_request_header_finish       (http2d_request_t *req);
 
+ret_t _http2d_request_initialize         (http2d_request_t *req);
+
+
 #endif /* HTTP2D_REQUEST_H */

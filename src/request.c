@@ -139,3 +139,16 @@ http2d_request_header_finish (http2d_request_t *req)
 
 	return req->methods.header_finish (req);
 }
+
+
+ret_t
+_http2d_request_initialize (http2d_request_t *req)
+{
+	ret_t                ret;
+	http2d_connection_t *conn = CONN(req->conn);
+
+	// 1.- Match vserver
+	// 2.- Match rule
+
+	return ret_ok;
+}
