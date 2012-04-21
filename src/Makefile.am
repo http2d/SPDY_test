@@ -88,7 +88,12 @@ server_src =              \
 	spdy-zlib.h          \
 	spdy-zlib.c          \
 	header.h             \
-	header.c
+	header.c             \
+	module.h             \
+	module.c             \
+	plugin.h             \
+	plugin_loader.h      \
+	plugin_loader.c
 
 tests_src =         \
 	buffer_test.c  \
