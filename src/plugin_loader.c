@@ -52,6 +52,7 @@ static pthread_mutex_t dlerror_mutex = PTHREAD_MUTEX_INITIALIZER;
 # define RTLD_BASE RTLD_LAZY
 #endif
 
+
 static ret_t
 add_static_entry (http2d_plugin_loader_t *loader,
 		  const char             *name,
@@ -192,8 +193,8 @@ dylib_open (http2d_plugin_loader_t  *loader,
 
 static ret_t
 execute_init_func (http2d_plugin_loader_t *loader,
-		   const char               *module,
-		   entry_t                  *entry)
+		   const char             *module,
+		   entry_t                *entry)
 {
 	ret_t ret;
 	void (*init_func) (http2d_plugin_loader_t *);
@@ -237,12 +238,12 @@ execute_init_func (http2d_plugin_loader_t *loader,
 
 static ret_t
 get_info (http2d_plugin_loader_t  *loader,
-	  const char                *module,
-	  int                        flags,
+	  const char              *module,
+	  int                      flags,
 	  http2d_plugin_info_t   **info,
-	  void                     **dl_handler)
+	  void                   **dl_handler)
 {
-	ret_t             ret;
+	ret_t           ret;
 	http2d_buffer_t info_name = HTTP2D_BUF_INIT;
 
 	/* Build the info struct string
@@ -272,11 +273,11 @@ get_info (http2d_plugin_loader_t  *loader,
 
 static ret_t
 check_deps_file (http2d_plugin_loader_t *loader,
-		 const char               *modname)
+		 const char             *modname)
 {
-	FILE             *file;
-	char              temp[128];
-	http2d_buffer_t filename = HTTP2D_BUF_INIT;
+	FILE            *file;
+	char             temp[128];
+	http2d_buffer_t  filename = HTTP2D_BUF_INIT;
 
 	http2d_buffer_add_va (&filename, "%s/%s.deps", loader->deps_dir.buf, modname);
 	file = fopen (filename.buf, "r");
@@ -315,13 +316,13 @@ exit:
 
 static ret_t
 load_common (http2d_plugin_loader_t *loader,
-	     const char               *modname,
-	     int                       flags)
+	     const char             *modname,
+	     int                     flags)
 {
-	ret_t                   ret;
-	entry_t                *entry     = NULL;
+	ret_t                 ret;
+	entry_t              *entry     = NULL;
 	http2d_plugin_info_t *info      = NULL;
-	void                   *dl_handle = NULL;
+	void                 *dl_handle = NULL;
 
 	/* If it is already loaded just return
 	 */
@@ -382,7 +383,7 @@ load_common (http2d_plugin_loader_t *loader,
 
 ret_t
 http2d_plugin_loader_load_no_global (http2d_plugin_loader_t *loader,
-				       const char               *modname)
+				     const char             *modname)
 {
 	return load_common (loader, modname, 0);
 }
@@ -390,7 +391,7 @@ http2d_plugin_loader_load_no_global (http2d_plugin_loader_t *loader,
 
 ret_t
 http2d_plugin_loader_load (http2d_plugin_loader_t *loader,
-			     const char               *modname)
+			   const char             *modname)
 {
 #ifdef HAVE_RTLDGLOBAL
 	return load_common (loader, modname, RTLD_GLOBAL);
@@ -402,7 +403,7 @@ http2d_plugin_loader_load (http2d_plugin_loader_t *loader,
 
 ret_t
 http2d_plugin_loader_unload (http2d_plugin_loader_t *loader,
-			       const char               *modname)
+			     const char             *modname)
 {
 	int      re     = 0;
 	ret_t    ret;
@@ -428,8 +429,8 @@ http2d_plugin_loader_unload (http2d_plugin_loader_t *loader,
 
 ret_t
 http2d_plugin_loader_get_info (http2d_plugin_loader_t  *loader,
-				 const char                *modname,
-				 http2d_plugin_info_t   **info)
+				 const char            *modname,
+				 http2d_plugin_info_t **info)
 {
 	ret_t    ret;
 	entry_t *entry;
@@ -448,9 +449,9 @@ http2d_plugin_loader_get_info (http2d_plugin_loader_t  *loader,
 
 ret_t
 http2d_plugin_loader_get_sym  (http2d_plugin_loader_t  *loader,
-				 const char                *modname,
-				 const char                *name,
-				 void                     **sym)
+				 const char            *modname,
+				 const char            *name,
+				 void                 **sym)
 {
 	ret_t    ret;
 	entry_t *entry;
@@ -479,8 +480,8 @@ http2d_plugin_loader_get_sym  (http2d_plugin_loader_t  *loader,
 
 ret_t
 http2d_plugin_loader_get (http2d_plugin_loader_t  *loader,
-			    const char                *modname,
-			    http2d_plugin_info_t   **info)
+			    const char            *modname,
+			    http2d_plugin_info_t **info)
 {
 	ret_t ret;
 
@@ -497,7 +498,8 @@ http2d_plugin_loader_get (http2d_plugin_loader_t  *loader,
 
 
 ret_t
-http2d_plugin_loader_set_directory  (http2d_plugin_loader_t *loader, http2d_buffer_t *dir)
+http2d_plugin_loader_set_directory  (http2d_plugin_loader_t *loader,
+				     http2d_buffer_t        *dir)
 {
 	http2d_buffer_clean (&loader->module_dir);
 	http2d_buffer_add_buffer (&loader->module_dir, dir);
@@ -507,7 +509,8 @@ http2d_plugin_loader_set_directory  (http2d_plugin_loader_t *loader, http2d_buff
 
 
 ret_t
-http2d_plugin_loader_set_deps_dir (http2d_plugin_loader_t *loader, http2d_buffer_t *dir)
+http2d_plugin_loader_set_deps_dir (http2d_plugin_loader_t *loader,
+				   http2d_buffer_t        *dir)
 {
 	http2d_buffer_clean (&loader->deps_dir);
 	http2d_buffer_add_buffer (&loader->deps_dir, dir);

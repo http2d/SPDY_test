@@ -35,8 +35,8 @@
 
 ret_t
 http2d_module_init_base (http2d_module_t       *module,
-			   http2d_module_props_t *props,
-			   http2d_plugin_info_t  *info)
+			 http2d_module_props_t *props,
+			 http2d_plugin_info_t  *info)
 {
 	/* Properties
 	 */
@@ -54,7 +54,8 @@ http2d_module_init_base (http2d_module_t       *module,
 
 
 ret_t
-http2d_module_get_name (http2d_module_t *module, const char **name)
+http2d_module_get_name (http2d_module_t  *module,
+			const char      **name)
 {
 	if (module->info == NULL)
 		return ret_not_found;
@@ -73,26 +74,26 @@ http2d_module_get_name (http2d_module_t *module, const char **name)
 /* Module properties
  */
 ret_t
-http2d_module_props_init_base (http2d_module_props_t *prop, module_func_props_free_t free_func)
+http2d_module_props_init_base (http2d_module_props_t      *prop,
+			       http2d_module_props_free_t  free_func)
 {
 	prop->free = free_func;
 	return ret_ok;
 }
 
 
-ret_t
+void
 http2d_module_props_free (http2d_module_props_t *prop)
 {
 	if (prop == NULL)
-		return ret_error;
+		return;
 
 	if (prop->free == NULL) {
 		SHOULDNT_HAPPEN;
-		return ret_error;
+		return;
 	}
 
 	prop->free (prop);
-	return ret_ok;
 }
 
 

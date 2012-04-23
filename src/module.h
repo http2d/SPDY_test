@@ -40,17 +40,18 @@
 
 /* Callback function prototipes
  */
-typedef void   * module_func_init_t;
-typedef ret_t (* module_func_new_t)        (void *);
-typedef ret_t (* module_func_free_t)       (void *);
-typedef ret_t (* module_func_props_free_t) (void *);
-typedef ret_t (* module_func_configure_t)  (http2d_config_node_t *conf, http2d_server_t *srv, void **props);
+typedef void * module_func_init_t;
+
+typedef ret_t (* http2d_module_new_t)        (void *);
+typedef ret_t (* http2d_module_configure_t)  (http2d_config_node_t *conf, http2d_server_t *srv, void **props);
+typedef void  (* http2d_module_free_t)       (void *);
+typedef void  (* http2d_module_props_free_t) (void *);
 
 
 /* Module properties
  */
 typedef struct {
-	module_func_props_free_t  free;
+	http2d_module_props_free_t free;
 } http2d_module_props_t;
 
 #define MODULE_PROPS(x)      ((http2d_module_props_t *)(x))
@@ -60,12 +61,12 @@ typedef struct {
 /* Data types for module objects
  */
 typedef struct {
-	http2d_plugin_info_t   *info;       /* ptr to info structure    */
-	http2d_module_props_t  *props;      /* ptr to local properties  */
+	http2d_plugin_info_t   *info;       /* Plugin            */
+	http2d_module_props_t  *props;      /* Local properties  */
 
-	module_func_new_t         instance;   /* constructor              */
-	void                     *init;       /* initializer              */
-	module_func_free_t        free;       /* destructor               */
+	http2d_module_new_t     instance;   /* constructor       */
+	void                   *init;       /* initializer       */
+	http2d_module_free_t    free;       /* destructor        */
 } http2d_module_t;
 
 #define MODULE(x) ((http2d_module_t *) (x))
@@ -78,8 +79,8 @@ ret_t http2d_module_get_name  (http2d_module_t *module, const char **name);
 
 /* Property methods
  */
-ret_t http2d_module_props_init_base (http2d_module_props_t *prop, module_func_props_free_t free_func);
+ret_t http2d_module_props_init_base (http2d_module_props_t *prop, http2d_module_props_free_t free_func);
 ret_t http2d_module_props_free_base (http2d_module_props_t *prop);
-ret_t http2d_module_props_free      (http2d_module_props_t *prop);
+void  http2d_module_props_free      (http2d_module_props_t *prop);
 
 #endif /* HTTP2D_MODULE_H */
